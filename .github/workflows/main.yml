@@ -33,7 +33,7 @@ jobs:
           # --- MOBILE TARGET (ANDROID) ---
           - platform: 'ubuntu-22.04'
             target: 'android'
-            args: '--target aarch64-linux-android'
+            args: '--target aarch64'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -78,15 +78,30 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # --- Build & Release ---
-      - name: Build and Publish Tauri app
+      # --- Desktop Build & Release ---
+      - name: Build and Publish Tauri Desktop App
+        if: matrix.target == 'desktop'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
           releaseName: 'Signal & Radio IDE v__VERSION__'
-          releaseBody: 'Офіційний реліз для Windows, Linux (Ubuntu 22.04 / 24.04), macOS та Android (APK).'
+          releaseBody: 'Офіційний реліз для Windows, Linux та macOS.'
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+      # --- Android Build & Release ---
+      - name: Build Android APK
+        if: matrix.target == 'android'
+        run: npx tauri android build --target aarch64
+
+      - name: Upload Android APK to Release
+        if: matrix.target == 'android'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.2.0
+          files: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
