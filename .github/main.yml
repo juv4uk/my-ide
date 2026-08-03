@@ -2,8 +2,11 @@ name: 'Publish Multiplatform Release'
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   publish-tauri:
@@ -13,7 +16,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # --- DESKTOP (Гарантовано створить інсталятори в Releases) ---
           - platform: 'windows-latest'
             target: 'desktop'
             args: ''
@@ -23,8 +25,6 @@ jobs:
           - platform: 'macos-latest'
             target: 'desktop'
             args: '--target universal-apple-darwin'
-
-          # --- ANDROID (Збірка APK) ---
           - platform: 'ubuntu-22.04'
             target: 'android'
             args: '--target aarch64-linux-android'
@@ -43,7 +43,6 @@ jobs:
         with:
           targets: ${{ matrix.target == 'android' && 'aarch64-linux-android' || (matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '') }}
 
-      # Налаштування Java & NDK для Android
       - name: Setup Java JDK
         if: matrix.target == 'android'
         uses: actions/setup-java@v4
@@ -57,7 +56,6 @@ jobs:
         with:
           ndk-version: r25c
 
-      # Залежності Linux
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -67,7 +65,6 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # Ініціалізація Android перед збіркою
       - name: Init Android Target
         if: matrix.target == 'android'
         run: npx tauri android init
@@ -77,8 +74,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Signal & Radio IDE ${{ github.ref_name }}'
+          tagName: v0.2.0
+          releaseName: 'Signal & Radio IDE v0.2.0'
           releaseBody: 'Автоматичний реліз для Windows, Linux, macOS та Android.'
           releaseDraft: false
           prerelease: false
