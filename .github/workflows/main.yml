@@ -118,6 +118,38 @@ jobs:
           echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> "$GITHUB_ENV"
           echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
 
+      - name: Prepare release signing config
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'my-ide-android-2026' }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || 'my-ide-android-2026' }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'my-ide-release' }}
+        run: |
+          set -euxo pipefail
+          KEYSTORE_DIR="$GITHUB_WORKSPACE/src-tauri/gen/android/app"
+          mkdir -p "$KEYSTORE_DIR"
+          KEYSTORE_PATH="$KEYSTORE_DIR/my-ide-release.keystore"
+
+          cat > "$KEYSTORE_DIR/keystore.properties" <<EOF
+          storeFile=./my-ide-release.keystore
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          EOF
+
+          if [ ! -f "$KEYSTORE_PATH" ]; then
+            keytool -genkeypair \
+              -v \
+              -keystore "$KEYSTORE_PATH" \
+              -alias "$ANDROID_KEY_ALIAS" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+              -keypass "$ANDROID_KEY_PASSWORD" \
+              -dname "CN=My IDE, OU=Release, O=My IDE, L=Local, S=Local, C=US"
+          fi
+
       - name: Install frontend dependencies
         run: npm ci
 
