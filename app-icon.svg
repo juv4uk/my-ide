@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <linearGradient id="wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base App Icon Shape (Rounded Squircle) -->
+  <rect width="512" height="512" rx="110" fill="url(#bg-grad)" />
+  <rect x="8" y="8" width="496" height="496" rx="102" fill="none" stroke="#334155" stroke-width="8" opacity="0.5" />
+
+  <!-- Radio Frequency Wave Signal -->
+  <path d="M 60 256 Q 110 120, 160 256 T 260 256 T 360 256 T 452 256" 
+        fill="none" stroke="url(#wave-grad)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Secondary Echo Wave -->
+  <path d="M 60 256 Q 110 330, 160 256 T 260 256 T 360 256 T 452 256" 
+        fill="none" stroke="#38bdf8" stroke-width="12" stroke-linecap="round" opacity="0.4" />
+
+  <!-- IDE Code Symbol Overlaid (Center-Right) -->
+  <text x="310" y="370" font-family="monospace" font-size="140" font-weight="900" fill="#f8fafc" opacity="0.95">&gt;_</text>
+  
+  <!-- Antenna / Node Marker Point -->
+  <circle cx="260" cy="256" r="18" fill="#38bdf8" stroke="#ffffff" stroke-width="6" />
+</svg>
