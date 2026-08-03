@@ -1,4 +1,4 @@
-name: 'Publish Multiplatform Release (Desktop & Mobile)'
+name: 'Publish Multiplatform Release'
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # --- DESKTOP ---
+          # --- DESKTOP (Гарантовано створить інсталятори в Releases) ---
           - platform: 'windows-latest'
             target: 'desktop'
             args: ''
@@ -24,13 +24,10 @@ jobs:
             target: 'desktop'
             args: '--target universal-apple-darwin'
 
-          # --- MOBILE ---
+          # --- ANDROID (Збірка APK) ---
           - platform: 'ubuntu-22.04'
             target: 'android'
             args: '--target aarch64-linux-android'
-          - platform: 'macos-latest'
-            target: 'ios'
-            args: '--target aarch64-apple-ios'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -44,10 +41,10 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target == 'android' && 'aarch64-linux-android' || (matrix.target == 'ios' && 'aarch64-apple-ios' || (matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '')) }}
+          targets: ${{ matrix.target == 'android' && 'aarch64-linux-android' || (matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '') }}
 
-      # Налаштування Java та Android SDK для збірки Android APK
-      - name: Setup Java JDK (for Android)
+      # Налаштування Java & NDK для Android
+      - name: Setup Java JDK
         if: matrix.target == 'android'
         uses: actions/setup-java@v4
         with:
@@ -60,7 +57,7 @@ jobs:
         with:
           ndk-version: r25c
 
-      # Залежності Linux для Tauri
+      # Залежності Linux
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -70,20 +67,19 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # Ініціалізація мобільних точок входу, якщо це збірка під Android/iOS
-      - name: Init Mobile Targets
-        if: matrix.target == 'android' || matrix.target == 'ios'
-        run: npx tauri ${{ matrix.target }} init
+      # Ініціалізація Android перед збіркою
+      - name: Init Android Target
+        if: matrix.target == 'android'
+        run: npx tauri android init
 
       - name: Build and Publish Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'my-ide v__VERSION__'
-          releaseBody: 'Автоматична збірка для Desktop (Windows, Linux, macOS) та Mobile (Android APK, iOS).'
-          releaseDraft: true
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Signal & Radio IDE ${{ github.ref_name }}'
+          releaseBody: 'Автоматичний реліз для Windows, Linux, macOS та Android.'
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
