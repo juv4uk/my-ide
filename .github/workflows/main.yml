@@ -54,6 +54,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Android NDK (Android only)
+        id: setup-ndk
         if: matrix.target == 'android'
         uses: nvdia/setup-android-ndk@v1
         with:
@@ -74,8 +75,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         with:
-          tagName: v0.2.0
-          releaseName: 'Signal & Radio IDE v0.2.0'
+          tagName: v__VERSION__
+          releaseName: 'Signal & Radio IDE v__VERSION__'
           releaseBody: 'Автоматичний реліз для Windows, Linux, macOS та Android.'
           releaseDraft: false
           prerelease: false
