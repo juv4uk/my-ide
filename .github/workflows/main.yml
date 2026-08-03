@@ -16,28 +16,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # --- DESKTOP TARGETS ---
           - platform: 'windows-latest'
             target: 'desktop'
             args: ''
-
-          # Linux: Ubuntu 22.04 LTS
           - platform: 'ubuntu-22.04'
             target: 'desktop'
             args: ''
-
-          # Linux: Ubuntu 24.04 LTS
           - platform: 'ubuntu-24.04'
             target: 'desktop'
             args: ''
-
-          # macOS Universal (Intel + Apple Silicon)
           - platform: 'macos-latest'
             target: 'desktop'
             args: '--target universal-apple-darwin'
-
-          # --- MOBILE TARGETS ---
-          # Android APK
           - platform: 'ubuntu-22.04'
             target: 'android'
             args: '--target aarch64-linux-android'
@@ -63,7 +53,12 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # Залежності для Ubuntu (і для 22.04, і для 24.04)
+      - name: Setup Android NDK (Android only)
+        if: matrix.target == 'android'
+        uses: nvdia/setup-android-ndk@v1
+        with:
+          ndk-version: r25c
+
       - name: Install Linux dependencies
         if: startsWith(matrix.platform, 'ubuntu') && matrix.target == 'desktop'
         run: |
@@ -77,10 +72,11 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         with:
           tagName: v0.2.0
           releaseName: 'Signal & Radio IDE v0.2.0'
-          releaseBody: 'Автоматичний реліз для Windows, Linux (Ubuntu 22.04/24.04), macOS та Android.'
+          releaseBody: 'Автоматичний реліз для Windows, Linux, macOS та Android.'
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
