@@ -16,14 +16,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # --- DESKTOP TARGETS ---
           - platform: 'windows-latest'
+            target: 'desktop'
             args: ''
           - platform: 'ubuntu-22.04'
+            target: 'desktop'
             args: ''
           - platform: 'ubuntu-24.04'
+            target: 'desktop'
             args: ''
           - platform: 'macos-latest'
+            target: 'desktop'
             args: '--target universal-apple-darwin'
+
+          # --- MOBILE TARGET (ANDROID) ---
+          - platform: 'ubuntu-22.04'
+            target: 'android'
+            args: '--target aarch64-linux-android'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -37,10 +47,25 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.target == 'android' && 'aarch64-linux-android' || (matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '') }}
 
+      # --- Android Setup ---
+      - name: Setup Java JDK (Android only)
+        if: matrix.target == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android NDK (Android only)
+        if: matrix.target == 'android'
+        uses: nvm-sh/setup-android-ndk@v1
+        with:
+          ndk-version: r25c
+
+      # --- Linux Dependencies ---
       - name: Install Linux dependencies
-        if: startsWith(matrix.platform, 'ubuntu')
+        if: startsWith(matrix.platform, 'ubuntu') && matrix.target == 'desktop'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
@@ -48,14 +73,16 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      # --- Build & Release ---
       - name: Build and Publish Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
         with:
           tagName: v__VERSION__
           releaseName: 'Signal & Radio IDE v__VERSION__'
-          releaseBody: 'Офіційний реліз для Windows, Linux (Ubuntu 22.04 / 24.04) та macOS.'
+          releaseBody: 'Офіційний реліз для Windows, Linux (Ubuntu 22.04 / 24.04), macOS та Android (APK).'
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
