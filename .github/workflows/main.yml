@@ -1,9 +1,7 @@
-name: Publish Multiplatform Release
+name: Publish Android Release
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -12,62 +10,13 @@ permissions:
   contents: write
 
 jobs:
-  build-desktop:
-    name: Build desktop release
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            args: ''
-          - os: ubuntu-22.04
-            args: ''
-          - os: ubuntu-24.04
-            args: ''
-          - os: macos-latest
-            args: '--target universal-apple-darwin'
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: lts/*
-          cache: npm
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Build and publish desktop app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__
-          releaseName: 'Signal & Radio IDE v__VERSION__'
-          releaseBody: 'Офіційний реліз для Windows, Linux та macOS.'
-          releaseDraft: false
-          prerelease: false
-          args: ${{ matrix.args }}
-
   build-android:
-    name: Build Android release
+    name: Build and publish Android release
     runs-on: ubuntu-22.04
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -91,64 +40,66 @@ jobs:
 
       - name: Install Android SDK and NDK
         shell: bash
-        env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME || env.ANDROID_SDK_ROOT }}
         run: |
           set -euxo pipefail
-          if [ -z "${ANDROID_SDK_ROOT:-}" ]; then
-            echo "ANDROID_SDK_ROOT is not set" >&2
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          if [ -z "$SDK_ROOT" ]; then
+            echo "Android SDK is not set" >&2
             exit 1
           fi
 
-          if [ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
-            echo "Android cmdline-tools not found; please install them first." >&2
+          if [ ! -x "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "Android cmdline-tools not found" >&2
             exit 1
           fi
 
-          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" --licenses >/dev/null || true
-          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" --install \
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
             "platform-tools" \
             "platforms;android-34" \
             "build-tools;34.0.0" \
             "ndk;26.3.11579264"
 
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> "$GITHUB_ENV"
-          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> "$GITHUB_ENV"
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$SDK_ROOT/ndk/26.3.11579264" >> "$GITHUB_ENV"
+          echo "NDK_HOME=$SDK_ROOT/ndk/26.3.11579264" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+
+      - name: Decode release keystore from GitHub secret
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euxo pipefail
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 secret is required" >&2
+            exit 1
+          fi
+
+          KEYSTORE_DIR="$GITHUB_WORKSPACE/src-tauri/gen/android/app"
+          mkdir -p "$KEYSTORE_DIR"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_DIR/my-ide-release.keystore"
 
       - name: Prepare release signing config
         shell: bash
         env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'my-ide-android-2026' }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || 'my-ide-android-2026' }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'my-ide-release' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -euxo pipefail
-          KEYSTORE_DIR="$GITHUB_WORKSPACE/src-tauri/gen/android/app"
-          mkdir -p "$KEYSTORE_DIR"
-          KEYSTORE_PATH="$KEYSTORE_DIR/my-ide-release.keystore"
+          if [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_ALIAS:-}" ]; then
+            echo "Missing Android signing secrets" >&2
+            exit 1
+          fi
 
-          cat > "$KEYSTORE_DIR/keystore.properties" <<EOF
+          cat > "$GITHUB_WORKSPACE/src-tauri/gen/android/app/keystore.properties" <<EOF
           storeFile=./my-ide-release.keystore
           storePassword=${ANDROID_KEYSTORE_PASSWORD}
           keyAlias=${ANDROID_KEY_ALIAS}
           keyPassword=${ANDROID_KEY_PASSWORD}
           EOF
-
-          if [ ! -f "$KEYSTORE_PATH" ]; then
-            keytool -genkeypair \
-              -v \
-              -keystore "$KEYSTORE_PATH" \
-              -alias "$ANDROID_KEY_ALIAS" \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -storepass "$ANDROID_KEYSTORE_PASSWORD" \
-              -keypass "$ANDROID_KEY_PASSWORD" \
-              -dname "CN=My IDE, OU=Release, O=My IDE, L=Local, S=Local, C=US"
-          fi
 
       - name: Install frontend dependencies
         run: npm ci
@@ -173,12 +124,13 @@ jobs:
           fi
           echo "apk_path=$APK_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Android APK to release
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+      - name: Upload Android APK to GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name || 'v0.2.0' }}
           files: ${{ steps.find_apk.outputs.apk_path }}
           fail_on_unmatched_files: true
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
