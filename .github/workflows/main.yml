@@ -17,20 +17,13 @@ jobs:
       matrix:
         include:
           - platform: 'windows-latest'
-            target: 'desktop'
             args: ''
           - platform: 'ubuntu-22.04'
-            target: 'desktop'
             args: ''
           - platform: 'ubuntu-24.04'
-            target: 'desktop'
             args: ''
           - platform: 'macos-latest'
-            target: 'desktop'
             args: '--target universal-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            target: 'android'
-            args: '--target aarch64-linux-android'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -44,24 +37,10 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target == 'android' && 'aarch64-linux-android' || (matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '') }}
-
-      - name: Setup Java JDK (Android only)
-        if: matrix.target == 'android'
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Android NDK (Android only)
-        id: setup-ndk
-        if: matrix.target == 'android'
-        uses: nvdia/setup-android-ndk@v1
-        with:
-          ndk-version: r25c
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Install Linux dependencies
-        if: startsWith(matrix.platform, 'ubuntu') && matrix.target == 'desktop'
+        if: startsWith(matrix.platform, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
@@ -73,11 +52,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         with:
           tagName: v__VERSION__
           releaseName: 'Signal & Radio IDE v__VERSION__'
-          releaseBody: 'Автоматичний реліз для Windows, Linux, macOS та Android.'
+          releaseBody: 'Офіційний реліз для Windows, Linux (Ubuntu 22.04 / 24.04) та macOS.'
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
