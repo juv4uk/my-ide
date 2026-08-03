@@ -57,11 +57,16 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Android NDK (Android only)
+      - name: Setup Android SDK & NDK (Android only)
         if: matrix.target == 'android'
-        uses: nvm-sh/setup-android-ndk@v1
-        with:
-          ndk-version: r25c
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK component (Android only)
+        if: matrix.target == 'android'
+        run: |
+          sdkmanager --install "ndk;25.2.9519653"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
 
       # --- Linux Dependencies ---
       - name: Install Linux dependencies
@@ -78,7 +83,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
         with:
           tagName: v__VERSION__
           releaseName: 'Signal & Radio IDE v__VERSION__'
