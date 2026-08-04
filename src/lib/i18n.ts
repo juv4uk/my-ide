@@ -18,7 +18,7 @@ const messages = {
     notePlaceholder: '# Activation notes\n\nConditions, antenna setup, observations…', preview: 'Preview', autosaved: 'Saved automatically',
     diagramError: 'The Mermaid diagram could not be rendered', templates: 'Learning templates',
     templatesHint: 'Insert an example, compare its source with the preview, then adapt it.',
-    basicNote: 'Basic note', qsoReport: 'QSO report', contactTable: 'Contact table', antennaTable: 'Antenna table',
+    basicNote: 'Basic note', qsoReport: 'QSO report', qrppExperiment: 'QRPp experiment', powerLadder: 'Power ladder', contactTable: 'Contact table', antennaTable: 'Antenna table',
     stationDiagram: 'Station diagram', templateAdded: 'Template inserted'
   },
   uk: {
@@ -39,7 +39,7 @@ const messages = {
     notePlaceholder: '# Нотатки активації\n\nУмови, антена, спостереження…', preview: 'Перегляд', autosaved: 'Зберігається автоматично',
     diagramError: 'Не вдалося побудувати Mermaid-схему', templates: 'Навчальні шаблони',
     templatesHint: 'Вставте приклад, порівняйте код із переглядом, а потім змінюйте його під себе.',
-    basicNote: 'Проста нотатка', qsoReport: 'Звіт QSO', contactTable: 'Таблиця зв’язків', antennaTable: 'Таблиця антен',
+    basicNote: 'Проста нотатка', qsoReport: 'Звіт QSO', qrppExperiment: 'QRPp-експеримент', powerLadder: 'Сходинки потужності', contactTable: 'Таблиця зв’язків', antennaTable: 'Таблиця антен',
     stationDiagram: 'Схема станції', templateAdded: 'Шаблон вставлено'
   },
   de: {
@@ -61,7 +61,7 @@ const messages = {
     notePlaceholder: '# Aktivierungsnotizen\n\nBedingungen, Antenne, Beobachtungen…', preview: 'Vorschau',
     autosaved: 'Wird automatisch gespeichert', diagramError: 'Das Mermaid-Diagramm konnte nicht dargestellt werden',
     templates: 'Lernvorlagen', templatesHint: 'Beispiel einfügen, Quelltext und Vorschau vergleichen und anschließend anpassen.',
-    basicNote: 'Einfache Notiz', qsoReport: 'QSO-Bericht', contactTable: 'Kontakt-Tabelle', antennaTable: 'Antennen-Tabelle',
+    basicNote: 'Einfache Notiz', qsoReport: 'QSO-Bericht', qrppExperiment: 'QRPp-Experiment', powerLadder: 'Leistungsleiter', contactTable: 'Kontakt-Tabelle', antennaTable: 'Antennen-Tabelle',
     stationDiagram: 'Stationsdiagramm', templateAdded: 'Vorlage eingefügt'
   }
 } as const;

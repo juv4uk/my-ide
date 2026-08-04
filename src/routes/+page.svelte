@@ -9,7 +9,7 @@
   import { DEFAULT_PROFILE, QsoRepository } from '$lib/qso-store';
 
   type Tab = 'new' | 'log' | 'notes' | 'settings';
-  type NoteTemplateKey = 'basicNote' | 'qsoReport' | 'contactTable' | 'antennaTable' | 'stationDiagram';
+  type NoteTemplateKey = 'basicNote' | 'qsoReport' | 'qrppExperiment' | 'powerLadder' | 'contactTable' | 'antennaTable' | 'stationDiagram';
   interface NoteTemplate { key: NoteTemplateKey; icon: string; content: string; mermaid?: boolean; }
 
   const repository = new QsoRepository();
@@ -23,6 +23,8 @@
     en: {
       basicNote: '# Field notes\n\n**Date:** YYYY-MM-DD\n\n## Conditions\n\n- Weather: \n- Propagation: \n- Equipment: \n\n> Tip: lines beginning with `>` become highlighted quotes.',
       qsoReport: '# QSO with CALLSIGN\n\n| Field | Value |\n| --- | --- |\n| UTC | 18:30 |\n| Band | 20M |\n| Mode | SSB |\n| RST | 59 / 59 |\n\n## Notes\n\nDescribe the contact here.',
+      qrppExperiment: '# QRPp experiment\n\n| Parameter | Value |\n| --- | --- |\n| TX power | 500 mW |\n| Radio |  |\n| Antenna |  |\n| Power source | Battery |\n| Weather |  |\n| Propagation |  |\n| Farthest QSO |  |\n\n## Result\n\n> What worked, what did not, and what will you change next time?',
+      powerLadder: '# Power ladder\n\n| TX power | RST received | Notes |\n| ---: | ---: | --- |\n| 1 W | 579 | Start here |\n| 500 mW | 559 |  |\n| 100 mW | 539 |  |\n| 50 mW |  |  |\n\n**Lowest successful power:** 100 mW',
       contactTable: '# Contact summary\n\n| UTC | Callsign | Band | Mode | RST |\n| --- | --- | --- | --- | --- |\n| 18:30 | UT1AAA | 20M | SSB | 59 |\n| 18:42 | DL1ABC | 40M | FT8 | -10 |',
       antennaTable: '# Antenna comparison\n\n| Antenna | Band | SWR | Signal | Notes |\n| --- | --- | ---: | ---: | --- |\n| Dipole | 20M | 1.2 | 59 | Stable |\n| Vertical | 20M | 1.5 | 57 | More noise |',
       stationDiagram: '# Station signal path\n\n```mermaid\nflowchart LR\n  antenna["Antenna"] --> tuner["Tuner"]\n  tuner --> radio["Radio"]\n  radio --> operator["Operator"]\n```\n\nChange a label or add `radio --> computer["Computer"]`.'
@@ -30,6 +32,8 @@
     uk: {
       basicNote: '# Польові нотатки\n\n**Дата:** РРРР-ММ-ДД\n\n## Умови\n\n- Погода: \n- Проходження: \n- Обладнання: \n\n> Підказка: рядок із `>` перетворюється на виділену цитату.',
       qsoReport: '# QSO з CALLSIGN\n\n| Поле | Значення |\n| --- | --- |\n| UTC | 18:30 |\n| Діапазон | 20M |\n| Режим | SSB |\n| RST | 59 / 59 |\n\n## Нотатки\n\nОпишіть зв’язок тут.',
+      qrppExperiment: '# QRPp-експеримент\n\n| Параметр | Значення |\n| --- | --- |\n| Потужність TX | 500 мВт |\n| Радіостанція |  |\n| Антена |  |\n| Живлення | Акумулятор |\n| Погода |  |\n| Проходження |  |\n| Найдальше QSO |  |\n\n## Результат\n\n> Що спрацювало, що ні та що змінити наступного разу?',
+      powerLadder: '# Сходинки потужності\n\n| Потужність TX | Отриманий RST | Нотатки |\n| ---: | ---: | --- |\n| 1 Вт | 579 | Почніть звідси |\n| 500 мВт | 559 |  |\n| 100 мВт | 539 |  |\n| 50 мВт |  |  |\n\n**Найменша успішна потужність:** 100 мВт',
       contactTable: '# Підсумок зв’язків\n\n| UTC | Позивний | Діапазон | Режим | RST |\n| --- | --- | --- | --- | --- |\n| 18:30 | UT1AAA | 20M | SSB | 59 |\n| 18:42 | DL1ABC | 40M | FT8 | -10 |',
       antennaTable: '# Порівняння антен\n\n| Антена | Діапазон | КСХ | Сигнал | Нотатки |\n| --- | --- | ---: | ---: | --- |\n| Диполь | 20M | 1.2 | 59 | Стабільно |\n| Вертикал | 20M | 1.5 | 57 | Більше шуму |',
       stationDiagram: '# Сигнальний тракт станції\n\n```mermaid\nflowchart LR\n  antenna["Антена"] --> tuner["Тюнер"]\n  tuner --> radio["Радіостанція"]\n  radio --> operator["Оператор"]\n```\n\nЗмініть підпис або додайте `radio --> computer["Комп’ютер"]`.'
@@ -37,6 +41,8 @@
     de: {
       basicNote: '# Feldnotizen\n\n**Datum:** JJJJ-MM-TT\n\n## Bedingungen\n\n- Wetter: \n- Ausbreitung: \n- Ausrüstung: \n\n> Tipp: Zeilen mit `>` werden als hervorgehobene Zitate dargestellt.',
       qsoReport: '# QSO mit CALLSIGN\n\n| Feld | Wert |\n| --- | --- |\n| UTC | 18:30 |\n| Band | 20M |\n| Betriebsart | SSB |\n| RST | 59 / 59 |\n\n## Notizen\n\nVerbindung hier beschreiben.',
+      qrppExperiment: '# QRPp-Experiment\n\n| Parameter | Wert |\n| --- | --- |\n| Sendeleistung | 500 mW |\n| Funkgerät |  |\n| Antenne |  |\n| Stromversorgung | Akku |\n| Wetter |  |\n| Ausbreitung |  |\n| Weitestes QSO |  |\n\n## Ergebnis\n\n> Was hat funktioniert, was nicht und was wird beim nächsten Mal geändert?',
+      powerLadder: '# Leistungsleiter\n\n| Sendeleistung | Empfangener RST | Notizen |\n| ---: | ---: | --- |\n| 1 W | 579 | Hier beginnen |\n| 500 mW | 559 |  |\n| 100 mW | 539 |  |\n| 50 mW |  |  |\n\n**Niedrigste erfolgreiche Leistung:** 100 mW',
       contactTable: '# Kontaktübersicht\n\n| UTC | Rufzeichen | Band | Betriebsart | RST |\n| --- | --- | --- | --- | --- |\n| 18:30 | UT1AAA | 20M | SSB | 59 |\n| 18:42 | DL1ABC | 40M | FT8 | -10 |',
       antennaTable: '# Antennenvergleich\n\n| Antenne | Band | SWR | Signal | Notizen |\n| --- | --- | ---: | ---: | --- |\n| Dipol | 20M | 1.2 | 59 | Stabil |\n| Vertikal | 20M | 1.5 | 57 | Mehr Rauschen |',
       stationDiagram: '# Signalweg der Station\n\n```mermaid\nflowchart LR\n  antenna["Antenne"] --> tuner["Tuner"]\n  tuner --> radio["Funkgerät"]\n  radio --> operator["Operator"]\n```\n\nBeschriftung ändern oder `radio --> computer["Computer"]` ergänzen.'
@@ -116,6 +122,21 @@
 
   function choosePower(power: string): void {
     draft.txPower = power;
+  }
+
+  /** EN/UK/DE: A visual category only; ADIF always keeps the operator's exact TX_PWR value. */
+  function powerClass(value: string): 'qrpp' | 'qrp' | '' {
+    const watts = Number.parseFloat(value.replace(',', '.'));
+    if (!Number.isFinite(watts) || watts < 0) return '';
+    if (watts < 1) return 'qrpp';
+    if (watts <= 5) return 'qrp';
+    return '';
+  }
+
+  function displayPower(value: string): string {
+    const watts = Number.parseFloat(value.replace(',', '.'));
+    if (!Number.isFinite(watts)) return value;
+    return watts < 1 ? `${Math.round(watts * 1000)} mW` : `${watts} W`;
   }
 
   function submitQso(): void {
@@ -221,6 +242,8 @@
     return [
       { key: 'basicNote', icon: '¶', content: content.basicNote },
       { key: 'qsoReport', icon: 'Q', content: content.qsoReport },
+      { key: 'qrppExperiment', icon: 'μ', content: content.qrppExperiment },
+      { key: 'powerLadder', icon: '↘', content: content.powerLadder },
       { key: 'contactTable', icon: '▦', content: content.contactTable },
       { key: 'antennaTable', icon: '⌁', content: content.antennaTable },
       { key: 'stationDiagram', icon: '◇', content: content.stationDiagram, mermaid: true }
@@ -401,6 +424,11 @@
                 <div class="qso-main"><strong>{record.call}</strong><span>{record.band} · {record.mode}</span></div>
                 <div class="qso-meta"><span>{displayDate(record.qsoDate)} · {displayTime(record.timeOn)} UTC</span>{#if record.qth}<span>{record.qth}</span>{/if}</div>
                 <div class="qso-rst"><span>↑ {record.rstSent || '—'}</span><span>↓ {record.rstRcvd || '—'}</span></div>
+                {#if record.txPower}
+                  <div class="power-badge" class:qrpp={powerClass(record.txPower) === 'qrpp'} class:qrp={powerClass(record.txPower) === 'qrp'}>
+                    {displayPower(record.txPower)}{#if powerClass(record.txPower)} · {powerClass(record.txPower).toUpperCase()}{/if}
+                  </div>
+                {/if}
                 <div class="card-actions"><button onclick={() => editQso(record)}>{t('edit')}</button><button class="danger" onclick={() => removeQso(record.id)}>{t('remove')}</button></div>
               </article>
             {:else}
@@ -516,6 +544,9 @@
   .qso-main strong { color: var(--text); font: 900 21px/1 monospace; }
   .qso-main span, .qso-meta span { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .qso-rst { display: flex; gap: 6px; color: var(--cyan); font: 700 12px monospace; }
+  .power-badge { justify-self: start; padding: 5px 8px; border: 1px solid #64748b80; border-radius: 999px; color: var(--muted); background: #0f172acc; font: 800 11px/1 monospace; white-space: nowrap; }
+  .power-badge.qrpp { color: #fde68a; border-color: #f59e0b99; background: #78350f66; box-shadow: 0 0 18px #f59e0b24; }
+  .power-badge.qrp { color: #a7f3d0; border-color: #10b98188; background: #064e3b66; }
   .card-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 7px; border-top: 1px solid #ffffff0d; padding-top: 10px; }
   .card-actions .danger { color: #ff948c; }
   .empty-state { text-align: center; color: var(--muted); padding: 70px 20px; }
