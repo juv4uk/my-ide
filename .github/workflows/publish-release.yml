@@ -203,6 +203,7 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      # ВИПРАВЛЕНО: ініціалізуємо iOS проєкт перед збіркою
       - name: Init iOS project
         run: npx tauri ios init --ci
 
