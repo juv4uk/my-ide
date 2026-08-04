@@ -217,17 +217,13 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      # WASPACK БІЛЬШЕ НЕ ПОТРІБЕН — ВИДАЛИВ
-      # Веб-збірка використовує лише SvelteKit static adapter
-
       - name: Install frontend dependencies
         run: npm ci
 
       - name: Build Web static version with relative paths
         env:
-          # Цю змінну можна використовувати в svelte.config.js або vite.config.js
           BUILD_TARGET: web
-          BASE_PATH: './'   # Дозволяє відкривати index.html локально без сервера
+          BASE_PATH: './'   # Дозволяє відкривати index.html локально без CORS
         run: |
           npm run build
 
@@ -238,7 +234,6 @@ jobs:
 
       - name: Package Web into zip
         run: |
-          # Визначаємо, яка папка створилась (build або dist)
           if [ -d "build" ]; then
             BUILD_DIR="build"
           elif [ -d "dist" ]; then
@@ -250,7 +245,6 @@ jobs:
 
           mkdir -p web-dist
           cp -r $BUILD_DIR/* web-dist/
-          # Додатково перевіряємо, чи є index.html
           if [ ! -f "web-dist/index.html" ]; then
             echo "ERROR: index.html not found in build output"
             exit 1
@@ -380,7 +374,7 @@ jobs:
           fi
           gh release upload "${{ github.ref_name }}" "$APK_PATH" --clobber
 
-  # ==================== iOS ====================
+  # ==================== iOS (ВИПРАВЛЕНО) ====================
   build-ios:
     needs: build-desktop
     runs-on: macos-latest
@@ -409,6 +403,13 @@ jobs:
 
       - name: Init iOS project
         run: npx tauri ios init --ci
+
+      - name: Resolve Swift dependencies (fix for swift-rs cache issue)
+        run: |
+          rm -rf ~/Library/Caches/org.swift.swiftpm/repositories/swift-rs-*
+          cd src-tauri/gen/apple
+          swift package resolve
+          cd -
 
       - name: Build iOS app (Simulator)
         run: npx tauri ios build --target aarch64-sim
