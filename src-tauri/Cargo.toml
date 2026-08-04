@@ -1,6 +1,6 @@
 [package]
 name = "my-ide"
-version = "0.3.1"
+version = "0.4.0"
 description = "Offline amateur radio logbook / Офлайн-журнал радіоаматора / Offline-Amateurfunk-Logbuch"
 authors = ["you"]
 edition = "2021"
