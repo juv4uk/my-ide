@@ -162,6 +162,7 @@ jobs:
       - name: Build Flatpak
         run: |
           DEB_FILE=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
+          cp "$DEB_FILE" ./my-ide.deb
           mkdir -p flatpak-build
 
           cat > com.juv4uk.my-ide.yml <<'EOF'
@@ -188,10 +189,9 @@ jobs:
                 - cp -r usr/share /app/share
               sources:
                 - type: file
-                  path: DEB_FILE_PLACEHOLDER
+                  path: my-ide.deb
           EOF
 
-          sed -i "s|DEB_FILE_PLACEHOLDER|${DEB_FILE}|g" com.juv4uk.my-ide.yml
           flatpak-builder --repo=repo --force-clean flatpak-build com.juv4uk.my-ide.yml
           flatpak build-bundle repo my-ide.flatpak com.juv4uk.my-ide
 
