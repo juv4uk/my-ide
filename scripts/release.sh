@@ -32,6 +32,11 @@ node -e '
     data.version = version;
     fs.writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
   }
+  const lockPath = "package-lock.json";
+  const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+  lock.version = version;
+  lock.packages[""].version = version;
+  fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
 ' "$VERSION"
 
 # Only the first version assignment is the application package version.
@@ -42,7 +47,7 @@ npm test
 npm run check
 npm run build
 
-git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json
+git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json
 git commit -m "release: v$VERSION"
 git tag -a "v$VERSION" -m "Signal & Radio IDE v$VERSION"
 

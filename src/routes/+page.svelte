@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import packageMetadata from '../../package.json';
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { exportAdif, parseAdif } from '$lib/adif';
@@ -145,7 +146,7 @@
   }
 
   async function exportFile(): Promise<void> {
-    const content = exportAdif(records, '0.2.20');
+    const content = exportAdif(records, packageMetadata.version);
     try {
       // Native save gives desktop/mobile users a predictable destination. Web builds use a download.
       if ('__TAURI_INTERNALS__' in window) {
