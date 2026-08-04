@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   publish-tauri:
@@ -32,7 +33,6 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      # ВИПРАВЛЕНО: встановлюємо Rust з обома macOS target'ами
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
