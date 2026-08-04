@@ -8,6 +8,7 @@
                     "build":  "vite build",
                     "preview":  "vite preview",
                     "check":  "svelte-kit sync \u0026\u0026 svelte-check --tsconfig ./tsconfig.json",
+                    "test":  "tsc -p tsconfig.test.json \u0026\u0026 node --test tests/adif.test.mjs",
                     "check:watch":  "svelte-kit sync \u0026\u0026 svelte-check --tsconfig ./tsconfig.json --watch",
                     "tauri":  "tauri"
                 },
