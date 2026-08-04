@@ -1,4 +1,4 @@
-export type Language = 'en' | 'uk';
+export type Language = 'en' | 'uk' | 'de';
 
 const messages = {
   en: {
@@ -12,7 +12,7 @@ const messages = {
     imported: 'contacts imported', importError: 'Could not import this ADIF file', exported: 'ADIF exported',
     stationProfile: 'Station profile', myCall: 'My callsign', operator: 'Operator', myGrid: 'My grid square',
     defaultBand: 'Default band', defaultMode: 'Default mode', defaultPower: 'Power (W)', language: 'Language',
-    saveProfile: 'Save profile', profileSaved: 'Station profile saved', english: 'English', ukrainian: 'Українська',
+    saveProfile: 'Save profile', profileSaved: 'Station profile saved', english: 'English', ukrainian: 'Українська', german: 'Deutsch',
     contacts: 'contacts', all: 'All', today: 'Today', quickPick: 'Quick select', power: 'TX power (W)',
     fieldNotes: 'Field notes', notesHint: 'Write Markdown and add one ```mermaid block for a station diagram.',
     notePlaceholder: '# Activation notes\n\nConditions, antenna setup, observations…', preview: 'Preview', autosaved: 'Saved automatically',
@@ -30,11 +30,30 @@ const messages = {
     importError: 'Не вдалося імпортувати цей ADIF-файл', exported: 'ADIF експортовано',
     stationProfile: 'Профіль станції', myCall: 'Мій позивний', operator: 'Оператор', myGrid: 'Мій локатор',
     defaultBand: 'Типовий діапазон', defaultMode: 'Типовий режим', defaultPower: 'Потужність (Вт)', language: 'Мова',
-    saveProfile: 'Зберегти профіль', profileSaved: 'Профіль станції збережено', english: 'English', ukrainian: 'Українська',
+    saveProfile: 'Зберегти профіль', profileSaved: 'Профіль станції збережено', english: 'English', ukrainian: 'Українська', german: 'Deutsch',
     contacts: 'контактів', all: 'Усі', today: 'Сьогодні', quickPick: 'Швидкий вибір', power: 'Потужність TX (Вт)',
     fieldNotes: 'Польові нотатки', notesHint: 'Пишіть у Markdown і додайте один блок ```mermaid для схеми станції.',
     notePlaceholder: '# Нотатки активації\n\nУмови, антена, спостереження…', preview: 'Перегляд', autosaved: 'Зберігається автоматично',
     diagramError: 'Не вдалося побудувати Mermaid-схему'
+  },
+  de: {
+    appName: 'Signal & Radio Log', newQso: 'Neues QSO', logbook: 'Logbuch', notes: 'Notizen', settings: 'Station',
+    call: 'Rufzeichen', callHint: 'Rufzeichen eingeben', band: 'Band', frequency: 'Frequenz (MHz)', mode: 'Betriebsart',
+    rstSent: 'RST gesendet', rstRcvd: 'RST empfangen', utcDate: 'Datum (UTC)', utcTime: 'Zeit (UTC)',
+    optional: 'Weitere Angaben', name: 'Name des Operators', qth: 'QTH', grid: 'Locator', comment: 'Kommentar',
+    saveQso: 'QSO speichern', updateQso: 'QSO aktualisieren', cancel: 'Abbrechen', saved: 'QSO gespeichert',
+    requiredCall: 'Bitte zuerst ein Rufzeichen eingeben', recent: 'Letzte Verbindungen',
+    search: 'Nach Rufzeichen, QTH, Band oder Betriebsart suchen', noQso: 'Noch keine Verbindungen im Logbuch',
+    edit: 'Bearbeiten', remove: 'Löschen', confirmDelete: 'Dieses QSO löschen?', importAdif: 'ADIF importieren',
+    exportAdif: 'ADIF exportieren', imported: 'Kontakte importiert', importError: 'Diese ADIF-Datei konnte nicht importiert werden',
+    exported: 'ADIF exportiert', stationProfile: 'Stationsprofil', myCall: 'Mein Rufzeichen', operator: 'Operator',
+    myGrid: 'Mein Locator', defaultBand: 'Standardband', defaultMode: 'Standardbetriebsart', defaultPower: 'Leistung (W)',
+    language: 'Sprache', saveProfile: 'Profil speichern', profileSaved: 'Stationsprofil gespeichert',
+    english: 'English', ukrainian: 'Українська', german: 'Deutsch', contacts: 'Kontakte', all: 'Alle', today: 'Heute',
+    quickPick: 'Schnellauswahl', power: 'Sendeleistung (W)', fieldNotes: 'Feldnotizen',
+    notesHint: 'Markdown schreiben und einen ```mermaid-Block für das Stationsdiagramm hinzufügen.',
+    notePlaceholder: '# Aktivierungsnotizen\n\nBedingungen, Antenne, Beobachtungen…', preview: 'Vorschau',
+    autosaved: 'Wird automatisch gespeichert', diagramError: 'Das Mermaid-Diagramm konnte nicht dargestellt werden'
   }
 } as const;
 

@@ -3,7 +3,7 @@
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { exportAdif, parseAdif } from '$lib/adif';
-  import { translate, type MessageKey } from '$lib/i18n';
+  import { translate, type Language, type MessageKey } from '$lib/i18n';
   import { BANDS, MODES, defaultRst, emptyQso, normalizeCallsign, utcQsoDate, type Qso, type StationProfile } from '$lib/qso';
   import { DEFAULT_PROFILE, QsoRepository } from '$lib/qso-store';
 
@@ -41,6 +41,7 @@
 
   onMount(() => {
     profile = repository.loadProfile();
+    applyLanguage(profile.language, false);
     records = repository.list();
     draft = emptyQso(profile);
     fieldNotes = localStorage.getItem(NOTES_KEY) ?? '';
@@ -50,6 +51,12 @@
   function flash(message: string): void {
     toast = message;
     window.setTimeout(() => { if (toast === message) toast = ''; }, 2600);
+  }
+
+  function applyLanguage(language: Language, persist = true): void {
+    profile.language = language;
+    document.documentElement.lang = language;
+    if (persist) repository.saveProfile(profile);
   }
 
   function chooseBand(band: string): void {
@@ -234,9 +241,9 @@
         <img class="brand-mark" src="/brand-icon.svg" alt="" />
         <div><strong>{t('appName')}</strong><small>{records.length} {t('contacts')} · {todayCount} {t('today').toLowerCase()}</small></div>
       </div>
-      <button class="language" onclick={() => { profile.language = profile.language === 'uk' ? 'en' : 'uk'; repository.saveProfile(profile); }}>
-        {profile.language === 'uk' ? 'EN' : 'UA'}
-      </button>
+      <select class="language" bind:value={profile.language} onchange={() => applyLanguage(profile.language)} aria-label={t('language')}>
+        <option value="en">EN</option><option value="uk">UA</option><option value="de">DE</option>
+      </select>
     </header>
 
     <main>
@@ -342,7 +349,7 @@
               <label><span>{t('defaultBand')}</span><select bind:value={profile.defaultBand}>{#each BANDS as band}<option>{band}</option>{/each}</select></label>
               <label><span>{t('defaultMode')}</span><select bind:value={profile.defaultMode}>{#each MODES as mode}<option>{mode}</option>{/each}</select></label>
               <label><span>{t('defaultPower')}</span><input bind:value={profile.defaultPower} inputmode="decimal" /></label>
-              <label><span>{t('language')}</span><select bind:value={profile.language}><option value="uk">{t('ukrainian')}</option><option value="en">{t('english')}</option></select></label>
+              <label><span>{t('language')}</span><select bind:value={profile.language} onchange={() => applyLanguage(profile.language)}><option value="en">{t('english')}</option><option value="uk">{t('ukrainian')}</option><option value="de">{t('german')}</option></select></label>
             </div>
             <button class="primary-action" onclick={saveProfile}>{t('saveProfile')}</button>
           </div>

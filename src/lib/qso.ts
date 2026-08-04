@@ -32,7 +32,7 @@ export interface StationProfile {
   defaultBand: string;
   defaultMode: string;
   defaultPower: string;
-  language: 'en' | 'uk';
+  language: 'en' | 'uk' | 'de';
 }
 
 export function utcQsoDate(date = new Date()): string {
