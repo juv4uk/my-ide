@@ -63,6 +63,7 @@ jobs:
 
   # ==================== ANDROID ====================
   build-android:
+    needs: build-desktop
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
@@ -156,9 +157,9 @@ jobs:
           NDK_HOME: ${{ env.NDK_HOME }}
         run: npx tauri android build --target aarch64
 
-      - name: Find APK
-        id: find_apk
-        shell: bash
+      - name: Upload APK to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
           APK_PATH="$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
@@ -166,19 +167,11 @@ jobs:
             echo "No APK found" >&2
             exit 1
           fi
-          echo "apk_path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          gh release upload "${{ github.ref_name }}" "$APK_PATH" --clobber
 
-      - name: Upload APK to release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: ${{ steps.find_apk.outputs.apk_path }}
-          fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # ==================== iOS ====================
+  # ==================== iOS ====================
   build-ios:
+    needs: build-desktop
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -209,9 +202,11 @@ jobs:
       - name: Build iOS app (Simulator)
         run: npx tauri ios build --target aarch64-sim
 
-      - name: Find iOS .app bundle
-        id: find_app
+      - name: Upload iOS to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euxo pipefail
           APP_PATH="$(find src-tauri/gen/apple -name '*.app' -type d | head -n 1)"
           if [ -z "$APP_PATH" ]; then
             echo "No .app bundle found" >&2
@@ -220,13 +215,4 @@ jobs:
           echo "Found app at: $APP_PATH"
           ZIP_PATH="${APP_PATH%.app}.zip"
           ditto -c -k --sequesterRsrc "$APP_PATH" "$ZIP_PATH"
-          echo "app_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
-
-      - name: Upload iOS to release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: ${{ steps.find_app.outputs.app_path }}
-          fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          gh release upload "${{ github.ref_name }}" "$ZIP_PATH" --clobber
