@@ -5,7 +5,7 @@ import { emptyQso } from '../.test-build/src/lib/qso.js';
 
 const profile = {
   callsign: 'UR5ABC', operator: 'UR5ABC', gridSquare: 'KO50', defaultBand: '20M',
-  defaultMode: 'SSB', defaultPower: '100', language: 'uk'
+  defaultMode: 'SSB', defaultPower: '0.5', language: 'uk'
 };
 
 test('parses standard ADI fields by their declared length', () => {

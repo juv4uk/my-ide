@@ -17,6 +17,8 @@
   const LANGUAGE_ORDER: Language[] = ['uk', 'en', 'de'];
   const quickBands = ['80M', '40M', '20M', '15M', '10M', '2M'];
   const quickModes = ['SSB', 'CW', 'FT8', 'FM'];
+  // EN/UK/DE: One-thumb presets keep QRPp operation faster than typing decimal values.
+  const quickPowers = ['0.05', '0.1', '0.5', '1', '5'];
   const NOTE_TEMPLATE_CONTENT: Record<Language, Record<NoteTemplateKey, string>> = {
     en: {
       basicNote: '# Field notes\n\n**Date:** YYYY-MM-DD\n\n## Conditions\n\n- Weather: \n- Propagation: \n- Equipment: \n\n> Tip: lines beginning with `>` become highlighted quotes.',
@@ -110,6 +112,10 @@
     draft.mode = mode;
     draft.rstSent = defaultRst(mode);
     draft.rstRcvd = defaultRst(mode);
+  }
+
+  function choosePower(power: string): void {
+    draft.txPower = power;
   }
 
   function submitQso(): void {
@@ -368,6 +374,12 @@
                 <label><span>{t('qth')}</span><input bind:value={draft.qth} /></label>
                 <label><span>{t('grid')}</span><input bind:value={draft.gridSquare} oninput={() => draft.gridSquare = draft.gridSquare.toUpperCase()} /></label>
               </div>
+              <fieldset>
+                <legend>QRPp · {t('quickPick')}</legend>
+                <div class="chips power-chips">
+                  {#each quickPowers as power}<button class:active={draft.txPower === power} onclick={() => choosePower(power)}>{power} W</button>{/each}
+                </div>
+              </fieldset>
               <label><span>{t('comment')}</span><textarea bind:value={draft.comment} rows="3"></textarea></label>
             </div>
           {/if}
@@ -432,6 +444,12 @@
               <label><span>{t('defaultBand')}</span><select bind:value={profile.defaultBand}>{#each BANDS as band}<option>{band}</option>{/each}</select></label>
               <label><span>{t('defaultMode')}</span><select bind:value={profile.defaultMode}>{#each MODES as mode}<option>{mode}</option>{/each}</select></label>
               <label><span>{t('defaultPower')}</span><input bind:value={profile.defaultPower} inputmode="decimal" /></label>
+              <fieldset>
+                <legend>QRPp · {t('quickPick')}</legend>
+                <div class="chips power-chips">
+                  {#each quickPowers as power}<button class:active={profile.defaultPower === power} onclick={() => profile.defaultPower = power}>{power} W</button>{/each}
+                </div>
+              </fieldset>
               <label><span>{t('language')}</span><select bind:value={profile.language} onchange={() => applyLanguage(profile.language)}><option value="en">{t('english')}</option><option value="uk">{t('ukrainian')}</option><option value="de">{t('german')}</option></select></label>
             </div>
             <button class="primary-action" onclick={saveProfile}>{t('saveProfile')}</button>

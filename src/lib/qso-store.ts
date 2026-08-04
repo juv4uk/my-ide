@@ -5,7 +5,7 @@ const PROFILE_KEY = 'signal-radio-ide:station-profile:v1';
 
 export const DEFAULT_PROFILE: StationProfile = {
   callsign: '', operator: '', gridSquare: '', defaultBand: '20M', defaultMode: 'SSB',
-  defaultPower: '100', language: 'uk'
+  defaultPower: '0.5', language: 'uk'
 };
 
 /** The repository boundary lets a future SQLite adapter replace localStorage without changing screens. */
@@ -35,7 +35,14 @@ export class QsoRepository {
   }
 
   loadProfile(): StationProfile {
-    return { ...DEFAULT_PROFILE, ...this.readJson<Partial<StationProfile>>(PROFILE_KEY, {}) };
+    const stored = this.readJson<Partial<StationProfile>>(PROFILE_KEY, {});
+
+    // EN: Migrate the old 100 W starter value to the project's QRPp-first 500 mW default.
+    // UK: Замінюємо старі стартові 100 Вт на орієнтовані на QRPp 500 мВт.
+    // DE: Der alte 100-W-Startwert wird auf den QRPp-Standard von 500 mW migriert.
+    if (stored.defaultPower === '100') stored.defaultPower = DEFAULT_PROFILE.defaultPower;
+
+    return { ...DEFAULT_PROFILE, ...stored };
   }
 
   saveProfile(profile: StationProfile): void {
