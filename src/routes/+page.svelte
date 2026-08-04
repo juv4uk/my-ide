@@ -11,6 +11,7 @@
 
   const repository = new QsoRepository();
   const NOTES_KEY = 'signal-radio-ide:field-notes:v1';
+  const LANGUAGE_ORDER: Language[] = ['uk', 'en', 'de'];
   const quickBands = ['80M', '40M', '20M', '15M', '10M', '2M'];
   const quickModes = ['SSB', 'CW', 'FT8', 'FM'];
 
@@ -57,6 +58,21 @@
     profile.language = language;
     document.documentElement.lang = language;
     if (persist) repository.saveProfile(profile);
+  }
+
+  function cycleLanguage(): void {
+    const currentIndex = LANGUAGE_ORDER.indexOf(profile.language);
+    const nextLanguage = LANGUAGE_ORDER[(currentIndex + 1) % LANGUAGE_ORDER.length];
+    applyLanguage(nextLanguage);
+  }
+
+  function languageCode(language: Language): string {
+    return language === 'uk' ? 'UA' : language.toUpperCase();
+  }
+
+  function nextLanguage(): Language {
+    const currentIndex = LANGUAGE_ORDER.indexOf(profile.language);
+    return LANGUAGE_ORDER[(currentIndex + 1) % LANGUAGE_ORDER.length];
   }
 
   function chooseBand(band: string): void {
@@ -241,9 +257,9 @@
         <img class="brand-mark" src="/brand-icon.svg" alt="" />
         <div><strong>{t('appName')}</strong><small>{records.length} {t('contacts')} · {todayCount} {t('today').toLowerCase()}</small></div>
       </div>
-      <select class="language" bind:value={profile.language} onchange={() => applyLanguage(profile.language)} aria-label={t('language')}>
-        <option value="en">EN</option><option value="uk">UA</option><option value="de">DE</option>
-      </select>
+      <button class="language" onclick={cycleLanguage} aria-label={`${t('language')}: ${languageCode(nextLanguage())}`} title={`${t('language')}: ${languageCode(nextLanguage())}`}>
+        <span>{languageCode(profile.language)}</span><small>→</small>
+      </button>
     </header>
 
     <main>
@@ -373,7 +389,7 @@
   :global(html) { background: #0b1022; }
   :global(body) { margin: 0; color: var(--text); background-color: #0b1022; background-image: linear-gradient(#ffffff0a 1px, transparent 1px), linear-gradient(90deg, #ffffff0a 1px, transparent 1px), radial-gradient(circle at 18% -8%, #263b72 0, var(--navy) 32%, #0b1022 72%); background-size: 50px 50px, 50px 50px, auto; background-attachment: fixed; font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; min-width: 320px; }
   :global(button), :global(input), :global(select), :global(textarea) { font: inherit; }
-  :global(button) { -webkit-tap-highlight-color: transparent; }
+  :global(button) { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   .app-shell { width: min(100%, 1440px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
   .topbar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; padding: max(12px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 12px max(18px, env(safe-area-inset-left)); border-bottom: 1px solid #47556966; background: #0f172ae8; backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 10; }
   .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
@@ -382,6 +398,8 @@
   .brand strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .brand small { color: var(--muted); margin-top: 2px; }
   .language, .text-button { border: 1px solid #47556999; background: #1e293b99; color: #cbd5e1; border-radius: 10px; padding: 9px 11px; cursor: pointer; }
+  .language { min-width: 58px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 800; touch-action: manipulation; }
+  .language small { color: var(--cyan); font-size: 13px; }
   main { min-width: 0; padding: 18px; }
   .panel { width: 100%; max-width: 900px; margin: 0 auto; }
   .section-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -449,6 +467,11 @@
     .notes-workspace { grid-template-columns: 1fr 1fr; }
   }
 
+  /* Keep the main action inside thumb reach while a portrait user scrolls through QSO details. */
+  @media (max-width: 1023px) {
+    .entry-panel > .primary-action { position: sticky; z-index: 5; bottom: calc(72px + env(safe-area-inset-bottom)); }
+  }
+
   /* Desktop and large tablets use normal CSS Grid; no manual left/center calculations can overlap content. */
   @media (min-width: 1024px) {
     .app-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto 1fr; padding-bottom: 0; }
@@ -480,6 +503,7 @@
     .field-grid { margin-top: 12px; }
     .advanced-toggle { margin-top: 13px; padding: 10px 4px; }
     .primary-action { min-height: 48px; margin-top: 14px; }
+    .entry-panel > .primary-action { bottom: max(10px, env(safe-area-inset-bottom)); }
     .toast { bottom: max(18px, env(safe-area-inset-bottom)); }
   }
   @media (max-width: 540px) {
