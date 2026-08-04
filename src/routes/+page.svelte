@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import packageMetadata from '../../package.json';
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
@@ -9,12 +9,37 @@
   import { DEFAULT_PROFILE, QsoRepository } from '$lib/qso-store';
 
   type Tab = 'new' | 'log' | 'notes' | 'settings';
+  type NoteTemplateKey = 'basicNote' | 'qsoReport' | 'contactTable' | 'antennaTable' | 'stationDiagram';
+  interface NoteTemplate { key: NoteTemplateKey; icon: string; content: string; mermaid?: boolean; }
 
   const repository = new QsoRepository();
   const NOTES_KEY = 'signal-radio-ide:field-notes:v1';
   const LANGUAGE_ORDER: Language[] = ['uk', 'en', 'de'];
   const quickBands = ['80M', '40M', '20M', '15M', '10M', '2M'];
   const quickModes = ['SSB', 'CW', 'FT8', 'FM'];
+  const NOTE_TEMPLATE_CONTENT: Record<Language, Record<NoteTemplateKey, string>> = {
+    en: {
+      basicNote: '# Field notes\n\n**Date:** YYYY-MM-DD\n\n## Conditions\n\n- Weather: \n- Propagation: \n- Equipment: \n\n> Tip: lines beginning with `>` become highlighted quotes.',
+      qsoReport: '# QSO with CALLSIGN\n\n| Field | Value |\n| --- | --- |\n| UTC | 18:30 |\n| Band | 20M |\n| Mode | SSB |\n| RST | 59 / 59 |\n\n## Notes\n\nDescribe the contact here.',
+      contactTable: '# Contact summary\n\n| UTC | Callsign | Band | Mode | RST |\n| --- | --- | --- | --- | --- |\n| 18:30 | UT1AAA | 20M | SSB | 59 |\n| 18:42 | DL1ABC | 40M | FT8 | -10 |',
+      antennaTable: '# Antenna comparison\n\n| Antenna | Band | SWR | Signal | Notes |\n| --- | --- | ---: | ---: | --- |\n| Dipole | 20M | 1.2 | 59 | Stable |\n| Vertical | 20M | 1.5 | 57 | More noise |',
+      stationDiagram: '# Station signal path\n\n```mermaid\nflowchart LR\n  antenna["Antenna"] --> tuner["Tuner"]\n  tuner --> radio["Radio"]\n  radio --> operator["Operator"]\n```\n\nChange a label or add `radio --> computer["Computer"]`.'
+    },
+    uk: {
+      basicNote: '# Польові нотатки\n\n**Дата:** РРРР-ММ-ДД\n\n## Умови\n\n- Погода: \n- Проходження: \n- Обладнання: \n\n> Підказка: рядок із `>` перетворюється на виділену цитату.',
+      qsoReport: '# QSO з CALLSIGN\n\n| Поле | Значення |\n| --- | --- |\n| UTC | 18:30 |\n| Діапазон | 20M |\n| Режим | SSB |\n| RST | 59 / 59 |\n\n## Нотатки\n\nОпишіть зв’язок тут.',
+      contactTable: '# Підсумок зв’язків\n\n| UTC | Позивний | Діапазон | Режим | RST |\n| --- | --- | --- | --- | --- |\n| 18:30 | UT1AAA | 20M | SSB | 59 |\n| 18:42 | DL1ABC | 40M | FT8 | -10 |',
+      antennaTable: '# Порівняння антен\n\n| Антена | Діапазон | КСХ | Сигнал | Нотатки |\n| --- | --- | ---: | ---: | --- |\n| Диполь | 20M | 1.2 | 59 | Стабільно |\n| Вертикал | 20M | 1.5 | 57 | Більше шуму |',
+      stationDiagram: '# Сигнальний тракт станції\n\n```mermaid\nflowchart LR\n  antenna["Антена"] --> tuner["Тюнер"]\n  tuner --> radio["Радіостанція"]\n  radio --> operator["Оператор"]\n```\n\nЗмініть підпис або додайте `radio --> computer["Комп’ютер"]`.'
+    },
+    de: {
+      basicNote: '# Feldnotizen\n\n**Datum:** JJJJ-MM-TT\n\n## Bedingungen\n\n- Wetter: \n- Ausbreitung: \n- Ausrüstung: \n\n> Tipp: Zeilen mit `>` werden als hervorgehobene Zitate dargestellt.',
+      qsoReport: '# QSO mit CALLSIGN\n\n| Feld | Wert |\n| --- | --- |\n| UTC | 18:30 |\n| Band | 20M |\n| Betriebsart | SSB |\n| RST | 59 / 59 |\n\n## Notizen\n\nVerbindung hier beschreiben.',
+      contactTable: '# Kontaktübersicht\n\n| UTC | Rufzeichen | Band | Betriebsart | RST |\n| --- | --- | --- | --- | --- |\n| 18:30 | UT1AAA | 20M | SSB | 59 |\n| 18:42 | DL1ABC | 40M | FT8 | -10 |',
+      antennaTable: '# Antennenvergleich\n\n| Antenne | Band | SWR | Signal | Notizen |\n| --- | --- | ---: | ---: | --- |\n| Dipol | 20M | 1.2 | 59 | Stabil |\n| Vertikal | 20M | 1.5 | 57 | Mehr Rauschen |',
+      stationDiagram: '# Signalweg der Station\n\n```mermaid\nflowchart LR\n  antenna["Antenne"] --> tuner["Tuner"]\n  tuner --> radio["Funkgerät"]\n  radio --> operator["Operator"]\n```\n\nBeschriftung ändern oder `radio --> computer["Computer"]` ergänzen.'
+    }
+  };
 
   let activeTab: Tab = 'new';
   let profile: StationProfile = { ...DEFAULT_PROFILE };
@@ -32,6 +57,7 @@
   let noteRenderError = '';
   let noteRenderTimer: number | undefined;
   let noteRenderRevision = 0;
+  let noteEditor: HTMLTextAreaElement;
 
   $: t = (key: MessageKey) => translate(profile.language, key);
   $: normalizedSearch = searchQuery.trim().toUpperCase();
@@ -182,6 +208,36 @@
     localStorage.setItem(NOTES_KEY, fieldNotes);
     if (noteRenderTimer) window.clearTimeout(noteRenderTimer);
     noteRenderTimer = window.setTimeout(renderNotes, 220);
+  }
+
+  function noteTemplates(): NoteTemplate[] {
+    const content = NOTE_TEMPLATE_CONTENT[profile.language];
+    return [
+      { key: 'basicNote', icon: '¶', content: content.basicNote },
+      { key: 'qsoReport', icon: 'Q', content: content.qsoReport },
+      { key: 'contactTable', icon: '▦', content: content.contactTable },
+      { key: 'antennaTable', icon: '⌁', content: content.antennaTable },
+      { key: 'stationDiagram', icon: '◇', content: content.stationDiagram, mermaid: true }
+    ];
+  }
+
+  async function insertNoteTemplate(template: NoteTemplate): Promise<void> {
+    const start = noteEditor?.selectionStart ?? fieldNotes.length;
+    const end = noteEditor?.selectionEnd ?? start;
+    const before = fieldNotes.slice(0, start);
+    const after = fieldNotes.slice(end);
+    const prefix = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
+    const suffix = after && !after.startsWith('\n') ? '\n\n' : '';
+    const inserted = `${prefix}${template.content}${suffix}`;
+    fieldNotes = `${before}${inserted}${after}`;
+    scheduleNoteRender();
+
+    // Restore the caret after Svelte updates the textarea so learning remains a fluid edit-preview loop.
+    await tick();
+    const caret = start + inserted.length;
+    noteEditor.focus();
+    noteEditor.setSelectionRange(caret, caret);
+    flash(t('templateAdded'));
   }
 
   async function renderNotes(): Promise<void> {
@@ -344,8 +400,18 @@
         <section class="panel notes-panel">
           <div class="section-heading"><div><span class="eyebrow">Markdown + Mermaid</span><h1>{t('fieldNotes')}</h1></div><small>{t('autosaved')}</small></div>
           <p class="notes-hint">{t('notesHint')}</p>
+          <section class="template-panel" aria-labelledby="template-heading">
+            <div class="template-copy"><strong id="template-heading">{t('templates')}</strong><small>{t('templatesHint')}</small></div>
+            <div class="template-chips">
+              {#each noteTemplates() as template}
+                <button onclick={() => insertNoteTemplate(template)} disabled={template.mermaid && fieldNotes.includes('```mermaid')} title={t(template.key)}>
+                  <span>{template.icon}</span>{t(template.key)}
+                </button>
+              {/each}
+            </div>
+          </section>
           <div class="notes-workspace">
-            <label class="note-editor"><span>Markdown</span><textarea bind:value={fieldNotes} oninput={scheduleNoteRender} placeholder={t('notePlaceholder')} spellcheck="true"></textarea></label>
+            <label class="note-editor"><span>Markdown</span><textarea bind:this={noteEditor} bind:value={fieldNotes} oninput={scheduleNoteRender} placeholder={t('notePlaceholder')} spellcheck="true"></textarea></label>
             <section class="note-preview" aria-live="polite">
               <span class="preview-label">{t('preview')}</span>
               {#if renderedMarkdown}<div class="markdown-body">{@html renderedMarkdown}</div>{/if}
@@ -439,6 +505,14 @@
   .settings-form { display: grid; gap: 15px; }
   .notes-panel .section-heading small { color: var(--muted); }
   .notes-hint { color: var(--muted); margin: -8px 0 18px; line-height: 1.5; }
+  .template-panel { margin-bottom: 16px; padding: 14px; border: 1px solid #47556966; border-radius: 14px; background: linear-gradient(135deg, #38bdf80c, #c084fc0c); }
+  .template-copy { display: flex; flex-direction: column; gap: 3px; margin-bottom: 11px; }
+  .template-copy strong { color: var(--text); }
+  .template-copy small { color: var(--muted); line-height: 1.4; }
+  .template-chips { display: flex; gap: 8px; overflow-x: auto; padding: 1px 1px 5px; scrollbar-width: thin; }
+  .template-chips button { flex: 0 0 auto; min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid #47556999; border-radius: 11px; background: var(--panel-raised); color: #dbeafe; cursor: pointer; }
+  .template-chips button span { color: var(--cyan); font: 800 17px monospace; }
+  .template-chips button:disabled { opacity: .4; cursor: not-allowed; }
   .notes-workspace { display: grid; gap: 14px; }
   .note-editor textarea { min-height: 270px; resize: vertical; font-family: 'Cascadia Code', Consolas, monospace; line-height: 1.55; }
   .note-preview { min-height: 270px; overflow: auto; padding: 18px; border: 1px solid #47556966; border-radius: 14px; background: #172033e6; }

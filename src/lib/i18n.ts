@@ -16,7 +16,10 @@ const messages = {
     contacts: 'contacts', all: 'All', today: 'Today', quickPick: 'Quick select', power: 'TX power (W)',
     fieldNotes: 'Field notes', notesHint: 'Write Markdown and add one ```mermaid block for a station diagram.',
     notePlaceholder: '# Activation notes\n\nConditions, antenna setup, observations…', preview: 'Preview', autosaved: 'Saved automatically',
-    diagramError: 'The Mermaid diagram could not be rendered'
+    diagramError: 'The Mermaid diagram could not be rendered', templates: 'Learning templates',
+    templatesHint: 'Insert an example, compare its source with the preview, then adapt it.',
+    basicNote: 'Basic note', qsoReport: 'QSO report', contactTable: 'Contact table', antennaTable: 'Antenna table',
+    stationDiagram: 'Station diagram', templateAdded: 'Template inserted'
   },
   uk: {
     appName: 'Signal & Radio Log', newQso: 'Нове QSO', logbook: 'Журнал', notes: 'Нотатки', settings: 'Станція',
@@ -34,7 +37,10 @@ const messages = {
     contacts: 'контактів', all: 'Усі', today: 'Сьогодні', quickPick: 'Швидкий вибір', power: 'Потужність TX (Вт)',
     fieldNotes: 'Польові нотатки', notesHint: 'Пишіть у Markdown і додайте один блок ```mermaid для схеми станції.',
     notePlaceholder: '# Нотатки активації\n\nУмови, антена, спостереження…', preview: 'Перегляд', autosaved: 'Зберігається автоматично',
-    diagramError: 'Не вдалося побудувати Mermaid-схему'
+    diagramError: 'Не вдалося побудувати Mermaid-схему', templates: 'Навчальні шаблони',
+    templatesHint: 'Вставте приклад, порівняйте код із переглядом, а потім змінюйте його під себе.',
+    basicNote: 'Проста нотатка', qsoReport: 'Звіт QSO', contactTable: 'Таблиця зв’язків', antennaTable: 'Таблиця антен',
+    stationDiagram: 'Схема станції', templateAdded: 'Шаблон вставлено'
   },
   de: {
     appName: 'Signal & Radio Log', newQso: 'Neues QSO', logbook: 'Logbuch', notes: 'Notizen', settings: 'Station',
@@ -53,7 +59,10 @@ const messages = {
     quickPick: 'Schnellauswahl', power: 'Sendeleistung (W)', fieldNotes: 'Feldnotizen',
     notesHint: 'Markdown schreiben und einen ```mermaid-Block für das Stationsdiagramm hinzufügen.',
     notePlaceholder: '# Aktivierungsnotizen\n\nBedingungen, Antenne, Beobachtungen…', preview: 'Vorschau',
-    autosaved: 'Wird automatisch gespeichert', diagramError: 'Das Mermaid-Diagramm konnte nicht dargestellt werden'
+    autosaved: 'Wird automatisch gespeichert', diagramError: 'Das Mermaid-Diagramm konnte nicht dargestellt werden',
+    templates: 'Lernvorlagen', templatesHint: 'Beispiel einfügen, Quelltext und Vorschau vergleichen und anschließend anpassen.',
+    basicNote: 'Einfache Notiz', qsoReport: 'QSO-Bericht', contactTable: 'Kontakt-Tabelle', antennaTable: 'Antennen-Tabelle',
+    stationDiagram: 'Stationsdiagramm', templateAdded: 'Vorlage eingefügt'
   }
 } as const;
 
