@@ -71,7 +71,7 @@ jobs:
       - name: Decode release keystore from GitHub secret
         shell: bash
         env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
           set -euxo pipefail
           if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
