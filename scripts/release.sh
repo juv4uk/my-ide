@@ -1,49 +1,51 @@
-#!/bin/bash
-# release.sh — автоматичний реліз Signal & Radio IDE
-# Використання: ./release.sh 0.2.8
+#!/usr/bin/env bash
+# Release helper for Signal & Radio IDE.
+# Помічник релізу Signal & Radio IDE.
+# Usage / Використання: ./scripts/release.sh 0.3.0
 
-set -e
+set -euo pipefail
 
-VERSION=$1
-
-if [ -z "$VERSION" ]; then
-    echo "❌ Вкажи версію: ./release.sh 0.2.8"
-    exit 1
+VERSION="${1:-}"
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Version must use MAJOR.MINOR.PATCH (example: 0.3.0)." >&2
+  exit 1
 fi
 
-echo "🚀 Створення релізу v$VERSION"
-
-# Перевірка, що ми в корені репозиторія
-if [ ! -d ".git" ]; then
-    echo "❌ Це не Git-репозиторій. Запускай з кореня проєкту."
-    exit 1
+if [[ ! -d .git || ! -f package.json || ! -f src-tauri/Cargo.toml ]]; then
+  echo "Run this script from the repository root." >&2
+  exit 1
 fi
 
-# Оновлення package.json
-echo "📦 Оновлення package.json..."
-sed -i "s/"version": "[0-9]\+\.[0-9]\+\.[0-9]\+/"version": "$VERSION/" package.json
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Commit or stash existing changes before creating a release." >&2
+  exit 1
+fi
 
-# Оновлення Cargo.toml
-echo "🦀 Оновлення Cargo.toml..."
-sed -i "s/^version = "[0-9]\+\.[0-9]\+\.[0-9]\+/version = "$VERSION/" src-tauri/Cargo.toml
+echo "Preparing Signal & Radio IDE v$VERSION"
 
-# Оновлення tauri.conf.json
-echo "⚙️ Оновлення tauri.conf.json..."
-sed -i "s/"version": "[0-9]\+\.[0-9]\+\.[0-9]\+/"version": "$VERSION/" src-tauri/tauri.conf.json
+# Node updates JSON without fragile quote-sensitive sed expressions.
+node -e '
+  const fs = require("node:fs");
+  const version = process.argv[1];
+  for (const path of ["package.json", "src-tauri/tauri.conf.json"]) {
+    const data = JSON.parse(fs.readFileSync(path, "utf8"));
+    data.version = version;
+    fs.writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
+  }
+' "$VERSION"
 
-# Коміт
-echo "💾 Коміт змін..."
-git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+# Only the first version assignment is the application package version.
+sed -E -i "0,/^version = \"[0-9]+\.[0-9]+\.[0-9]+\"/s//version = \"$VERSION\"/" src-tauri/Cargo.toml
+
+cargo check --manifest-path src-tauri/Cargo.toml
+npm test
+npm run check
+npm run build
+
+git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json
 git commit -m "release: v$VERSION"
+git tag -a "v$VERSION" -m "Signal & Radio IDE v$VERSION"
 
-# Пуш
-echo "📤 Пуш на GitHub..."
-git push origin main
-
-# Тег
-echo "🏷️ Створення тегу v$VERSION..."
-git tag "v$VERSION"
-git push origin "v$VERSION"
-
-echo "✅ Готово! Workflow запустився автоматично."
-echo "👀 Стеж за прогресом: https://github.com/juv4uk/my-ide/actions"
+# Atomic push prevents a branch-only or tag-only partial release.
+git push --atomic origin main "v$VERSION"
+echo "Release v$VERSION pushed successfully."
