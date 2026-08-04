@@ -61,8 +61,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Signal & Radio IDE ${{ github.ref_name }}'
-          releaseBody: 'Автоматичний реліз для Windows, Linux, macOS, Android, iOS, ARM Linux, Flatpak та Web.'
+          releaseName: 'Signal & Radio Log ${{ github.ref_name }}'
+          releaseBody: |
+            Offline-first amateur-radio logbook for Windows, Linux, macOS, Android, iOS Simulator, ARM Linux, Flatpak, and Web.
+
+            Офлайн-журнал радіоаматора для Windows, Linux, macOS, Android, iOS Simulator, ARM Linux, Flatpak і Web.
+
+            Offline-Amateurfunk-Logbuch für Windows, Linux, macOS, Android, iOS Simulator, ARM Linux, Flatpak und Web.
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
