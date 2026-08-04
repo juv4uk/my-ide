@@ -367,16 +367,16 @@
   :global(body) { margin: 0; color: var(--text); background-color: #0b1022; background-image: linear-gradient(#ffffff0a 1px, transparent 1px), linear-gradient(90deg, #ffffff0a 1px, transparent 1px), radial-gradient(circle at 18% -8%, #263b72 0, var(--navy) 32%, #0b1022 72%); background-size: 50px 50px, 50px 50px, auto; background-attachment: fixed; font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; min-width: 320px; }
   :global(button), :global(input), :global(select), :global(textarea) { font: inherit; }
   :global(button) { -webkit-tap-highlight-color: transparent; }
-  .app-shell { width: min(100%, 1080px); min-height: 100dvh; margin: 0 auto; padding-bottom: 92px; }
-  .topbar { height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid #47556966; background: #0f172ae8; backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 10; }
+  .app-shell { width: min(100%, 1440px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
+  .topbar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; padding: max(12px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 12px max(18px, env(safe-area-inset-left)); border-bottom: 1px solid #47556966; background: #0f172ae8; backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 10; }
   .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
   .brand-mark { display: block; width: 44px; height: 44px; border-radius: 13px; box-shadow: 0 8px 28px #818cf840; }
   .brand div { display: flex; flex-direction: column; min-width: 0; }
   .brand strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .brand small { color: var(--muted); margin-top: 2px; }
   .language, .text-button { border: 1px solid #47556999; background: #1e293b99; color: #cbd5e1; border-radius: 10px; padding: 9px 11px; cursor: pointer; }
-  main { padding: 18px; }
-  .panel { max-width: 780px; margin: 0 auto; }
+  main { min-width: 0; padding: 18px; }
+  .panel { width: 100%; max-width: 900px; margin: 0 auto; }
   .section-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   h1 { margin: 2px 0 0; font-size: clamp(26px, 6vw, 38px); letter-spacing: -1.2px; }
   .eyebrow { color: var(--cyan); text-transform: uppercase; font-size: 11px; font-weight: 800; letter-spacing: 1.6px; }
@@ -436,21 +436,56 @@
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
   @keyframes reveal { from { opacity: 0; transform: translateY(-5px); } }
   @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+  /* Tablet portrait keeps the thumb-friendly bottom bar but can use two preview columns. */
   @media (min-width: 760px) {
-    .app-shell { padding: 0 0 30px 210px; }
-    .topbar { margin-left: -210px; padding-left: 22px; }
-    .bottom-nav { left: calc(50% - 435px); transform: none; top: 72px; bottom: 0; width: 210px; display: flex; flex-direction: column; padding: 20px 12px; border-top: 0; border-right: 1px solid #ffffff12; }
-    .bottom-nav button { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 12px; border-radius: 11px; font-size: 13px; }
-    .bottom-nav button.active { background: linear-gradient(90deg, #38bdf814, #c084fc14); }
-    main { padding: 32px; }
+    main { padding: 28px; }
     .notes-workspace { grid-template-columns: 1fr 1fr; }
   }
+
+  /* Desktop and large tablets use normal CSS Grid; no manual left/center calculations can overlap content. */
+  @media (min-width: 1024px) {
+    .app-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: auto 1fr; padding-bottom: 0; }
+    .topbar { grid-column: 1 / -1; grid-row: 1; }
+    main { grid-column: 2; grid-row: 2; padding: 34px clamp(28px, 4vw, 56px) 48px; }
+    .bottom-nav { position: sticky; grid-column: 1; grid-row: 2; align-self: start; left: auto; top: 72px; bottom: auto; transform: none; width: 220px; height: calc(100dvh - 72px); display: flex; flex-direction: column; padding: 20px 12px; border-top: 0; border-right: 1px solid #47556966; }
+    .bottom-nav button { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 12px; border-radius: 11px; font-size: 13px; }
+    .bottom-nav button.active { background: linear-gradient(90deg, #38bdf814, #c084fc14); }
+  }
+
+  /* Phones and small tablets in landscape trade the bottom bar for a narrow icon rail. */
+  @media (orientation: landscape) and (max-width: 1023px) and (max-height: 600px) {
+    .app-shell { width: 100%; padding: 0 0 0 calc(72px + env(safe-area-inset-left)); }
+    .topbar { min-height: 56px; padding-top: max(7px, env(safe-area-inset-top)); padding-bottom: 7px; }
+    .brand-mark { width: 38px; height: 38px; border-radius: 11px; }
+    .brand small { display: none; }
+    main { padding: 14px 18px 24px; }
+    .panel { max-width: none; }
+    .bottom-nav { left: 0; top: 0; bottom: 0; transform: none; width: calc(72px + env(safe-area-inset-left)); height: 100dvh; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: max(8px, env(safe-area-inset-top)) 6px max(8px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left)); border-top: 0; border-right: 1px solid #47556966; }
+    .bottom-nav button { flex: 0 1 62px; justify-content: center; padding: 5px 2px; border-radius: 10px; font-size: 9px; }
+    .bottom-nav button span { font-size: 20px; }
+    .bottom-nav button.active { background: linear-gradient(135deg, #38bdf817, #c084fc17); }
+    .section-heading { margin-bottom: 12px; }
+    h1 { font-size: clamp(24px, 5vw, 32px); }
+    .call-field input { padding: 11px 14px; font-size: clamp(24px, 7vw, 34px); }
+    fieldset { margin-top: 13px; }
+    fieldset select { margin-top: 7px; }
+    .chips button { min-height: 38px; }
+    .field-grid { margin-top: 12px; }
+    .advanced-toggle { margin-top: 13px; padding: 10px 4px; }
+    .primary-action { min-height: 48px; margin-top: 14px; }
+    .toast { bottom: max(18px, env(safe-area-inset-bottom)); }
+  }
   @media (max-width: 540px) {
-    .field-grid.two { grid-template-columns: 1fr 1fr; }
+    .field-grid.two { grid-template-columns: 1fr; }
     .qso-card { grid-template-columns: 1fr auto; }
     .qso-meta { grid-column: 1; }
     .qso-rst { grid-column: 2; grid-row: 1 / 3; flex-direction: column; }
     .toolbar { grid-template-columns: 1fr 1fr; }
     .toolbar button { padding: 10px 7px; font-size: 12px; }
+  }
+
+  /* Landscape phones have enough horizontal room for paired inputs despite their short height. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .field-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>
