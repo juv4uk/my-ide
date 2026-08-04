@@ -204,7 +204,7 @@ jobs:
             gh release upload "${{ github.ref_name }}" "my-ide.flatpak" --clobber
           fi
 
-  # ==================== WEB / WASM ====================
+  # ==================== WEB / WASM (ВИПРАВЛЕНО) ====================
   build-web:
     needs: build-desktop
     runs-on: ubuntu-22.04
@@ -217,23 +217,44 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      - name: Install Rust with WASM target
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Install wasm-pack
-        run: |
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      # WASPACK БІЛЬШЕ НЕ ПОТРІБЕН — ВИДАЛИВ
+      # Веб-збірка використовує лише SvelteKit static adapter
 
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Web version
+      - name: Build Web static version with relative paths
+        env:
+          # Цю змінну можна використовувати в svelte.config.js або vite.config.js
+          BUILD_TARGET: web
+          BASE_PATH: './'   # Дозволяє відкривати index.html локально без сервера
         run: |
           npm run build
+
+      - name: Verify build output
+        run: |
+          echo "=== Contents of build/ ==="
+          ls -la build/ || ls -la dist/ || (echo "No build output found!" && exit 1)
+
+      - name: Package Web into zip
+        run: |
+          # Визначаємо, яка папка створилась (build або dist)
+          if [ -d "build" ]; then
+            BUILD_DIR="build"
+          elif [ -d "dist" ]; then
+            BUILD_DIR="dist"
+          else
+            echo "ERROR: No build or dist directory found"
+            exit 1
+          fi
+
           mkdir -p web-dist
-          cp -r build/* web-dist/ 2>/dev/null || cp -r dist/* web-dist/ 2>/dev/null || true
+          cp -r $BUILD_DIR/* web-dist/
+          # Додатково перевіряємо, чи є index.html
+          if [ ! -f "web-dist/index.html" ]; then
+            echo "ERROR: index.html not found in build output"
+            exit 1
+          fi
           zip -r my-ide-web.zip web-dist/
 
       - name: Upload Web to release
@@ -243,6 +264,8 @@ jobs:
           set -euxo pipefail
           if [ -f "my-ide-web.zip" ]; then
             gh release upload "${{ github.ref_name }}" "my-ide-web.zip" --clobber
+          else
+            echo "No web zip found, failing" && exit 1
           fi
 
   # ==================== ANDROID ====================
