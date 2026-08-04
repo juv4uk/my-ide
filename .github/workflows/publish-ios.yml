@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build-ios:
@@ -27,7 +28,7 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-ios-sim, aarch64-apple-ios
+          targets: aarch64-apple-ios-sim
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -36,9 +37,7 @@ jobs:
         run: npm ci
 
       - name: Build iOS app (Simulator)
-        run: |
-          rustup target add aarch64-apple-ios-sim
-          npx tauri ios build --target aarch64-apple-ios-sim
+        run: npx tauri ios build --target aarch64-apple-ios-sim
 
       - name: Find iOS .app bundle
         id: find_app
@@ -48,7 +47,6 @@ jobs:
             echo "No .app bundle found" >&2
             exit 1
           fi
-          # Створюємо zip для зручності завантаження
           ZIP_PATH="${APP_PATH%.app}.zip"
           ditto -c -k --sequesterRsrc "$APP_PATH" "$ZIP_PATH"
           echo "app_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
