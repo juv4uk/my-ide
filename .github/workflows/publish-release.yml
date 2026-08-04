@@ -104,11 +104,7 @@ jobs:
           fi
 
           yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
-          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0" \
-            "ndk;26.3.11579264"
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install             "platform-tools"             "platforms;android-34"             "build-tools;34.0.0"             "ndk;26.3.11579264"
 
           echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
@@ -181,7 +177,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-   # ==================== iOS ====================
+  # ==================== iOS ====================
   build-ios:
     runs-on: macos-latest
     steps:
@@ -197,8 +193,7 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: |
-            aarch64-apple-ios-sim   # ← ПОВНА назва Rust target
+          targets: aarch64-apple-ios-sim
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -209,7 +204,7 @@ jobs:
         run: npm ci
 
       - name: Build iOS app (Simulator)
-        run: npx tauri ios build --target aarch64-sim   # ← shorthand для Tauri CLI
+        run: npx tauri ios build --target aarch64-sim
 
       - name: Find iOS .app bundle
         id: find_app
