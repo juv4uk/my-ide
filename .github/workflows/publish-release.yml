@@ -203,6 +203,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Init iOS project
+        run: npx tauri ios init --ci
+
       - name: Build iOS app (Simulator)
         run: npx tauri ios build --target aarch64-sim
 
