@@ -56,10 +56,163 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Signal & Radio IDE ${{ github.ref_name }}'
-          releaseBody: 'Автоматичний реліз для Windows, Linux, macOS, Android та iOS.'
+          releaseBody: 'Автоматичний реліз для Windows, Linux, macOS, Android, iOS, ARM Linux, Flatpak та Web.'
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+  # ==================== ARM LINUX (Raspberry Pi) ====================
+  build-arm-linux:
+    needs: build-desktop
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust with ARM target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+
+      - name: Install cross-compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          sudo apt-get install -y libwebkit2gtk-4.1-dev:arm64 libappindicator3-dev:arm64 librsvg2-dev:arm64
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build ARM Linux
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          npx tauri build --target aarch64-unknown-linux-gnu
+          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/*.deb ./my-ide-arm64.deb || true
+          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/*.AppImage ./my-ide-arm64.AppImage || true
+
+      - name: Upload ARM Linux to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          for f in ./my-ide-arm64.*; do
+            [ -f "$f" ] && gh release upload "${{ github.ref_name }}" "$f" --clobber
+          done
+
+  # ==================== FLATPAK ====================
+  build-flatpak:
+    needs: build-desktop
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Flatpak tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        run: npx tauri build
+
+      - name: Build Flatpak
+        run: |
+          mkdir -p flatpak-build
+          # Створюємо простий Flatpak manifest
+          cat > com.juv4uk.my-ide.yml <<'EOF'
+          app-id: com.juv4uk.my-ide
+          runtime: org.freedesktop.Platform
+          runtime-version: '23.08'
+          sdk: org.freedesktop.Sdk
+          command: my-ide
+          finish-args:
+            - --socket=wayland
+            - --socket=fallback-x11
+            - --share=ipc
+            - --share=network
+            - --filesystem=home
+          modules:
+            - name: my-ide
+              buildsystem: simple
+              build-commands:
+                - install -D src-tauri/target/release/bundle/deb/*/data/usr/bin/my-ide /app/bin/my-ide
+                - cp -r src-tauri/target/release/bundle/deb/*/data/usr/share /app/share
+              sources:
+                - type: dir
+                  path: .
+          EOF
+          flatpak-builder --repo=repo flatpak-build com.juv4uk.my-ide.yml || true
+          flatpak build-bundle repo my-ide.flatpak com.juv4uk.my-ide || true
+
+      - name: Upload Flatpak to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          if [ -f "my-ide.flatpak" ]; then
+            gh release upload "${{ github.ref_name }}" "my-ide.flatpak" --clobber
+          fi
+
+  # ==================== WEB / WASM ====================
+  build-web:
+    needs: build-desktop
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust with WASM target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Web version
+        run: |
+          # Збираємо тільки фронтенд для статичного хостингу
+          npm run build
+          mkdir -p web-dist
+          cp -r build/* web-dist/ 2>/dev/null || cp -r dist/* web-dist/ 2>/dev/null || true
+          # Архівуємо
+          zip -r my-ide-web.zip web-dist/
+
+      - name: Upload Web to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          if [ -f "my-ide-web.zip" ]; then
+            gh release upload "${{ github.ref_name }}" "my-ide-web.zip" --clobber
+          fi
 
   # ==================== ANDROID ====================
   build-android:
@@ -105,7 +258,11 @@ jobs:
           fi
 
           yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
-          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install             "platform-tools"             "platforms;android-34"             "build-tools;34.0.0"             "ndk;26.3.11579264"
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "ndk;26.3.11579264"
 
           echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
