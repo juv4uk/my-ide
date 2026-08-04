@@ -1,406 +1,344 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
-  import { invoke } from '@tauri-apps/api/core';
-  import mermaid from 'mermaid';
-  import { marked } from 'marked';
-  import { save, open } from '@tauri-apps/plugin-dialog';
-  import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
+  import { onMount } from 'svelte';
+  import { save } from '@tauri-apps/plugin-dialog';
+  import { writeTextFile } from '@tauri-apps/plugin-fs';
+  import { exportAdif, parseAdif } from '$lib/adif';
+  import { translate, type MessageKey } from '$lib/i18n';
+  import { BANDS, MODES, defaultRst, emptyQso, normalizeCallsign, utcQsoDate, type Qso, type StationProfile } from '$lib/qso';
+  import { DEFAULT_PROFILE, QsoRepository } from '$lib/qso-store';
 
-  // Оновлені імпорти для CodeMirror 6
-  import { basicSetup } from 'codemirror';
-  import { EditorView } from '@codemirror/view';
-  import { EditorState } from '@codemirror/state';
-  import { oneDark } from '@codemirror/theme-one-dark';
-  import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-  import { tags as t } from '@lezer/highlight';
+  type Tab = 'new' | 'log' | 'notes' | 'settings';
 
-  interface ParsedBlock {
-    block_type: string;
-    content: string;
-    metadata?: string;
-  }
+  const repository = new QsoRepository();
+  const quickBands = ['80M', '40M', '20M', '15M', '10M', '2M'];
+  const quickModes = ['SSB', 'CW', 'FT8', 'FM'];
 
-  let code = `# Вітання у вашій мові
+  let activeTab: Tab = 'new';
+  let profile: StationProfile = { ...DEFAULT_PROFILE };
+  let draft: Qso = emptyQso(profile);
+  let records: Qso[] = [];
+  let searchQuery = '';
+  let showAdvanced = false;
+  let editing = false;
+  let ready = false;
+  let toast = '';
+  let importInput: HTMLInputElement;
 
-| Параметр | Значення |
-| --- | --- |
-| Частота | 14.200 МГц |
-| Потужність | 100 Вт |
-
-#graph[Antenna -> Bandpass_Filter -> LNA -> SDR]
-#adif{CALL: "UT1AAA", BAND: "20M", MODE: "SSB", RST: "59"}`;
-
-  let parsedBlocks: ParsedBlock[] = [];
-  let editorContainer: HTMLDivElement;
-  let editorView: EditorView;
-
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: 'dark',
-    securityLevel: 'loose'
-  });
-
-  // Стилі підсвічування для базових елементів
-  const myHighlightStyle = HighlightStyle.define([
-    { tag: t.heading, color: '#569cd6', fontWeight: 'bold' },
-    { tag: t.keyword, color: '#c586c0' },
-    { tag: t.string, color: '#ce9178' },
-    { tag: t.comment, color: '#6a9955' }
-  ]);
-
-  function initCodeMirror() {
-    const updateListener = EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
-        code = update.state.doc.toString();
-        parseCode();
-      }
-    });
-
-    const state = EditorState.create({
-      doc: code,
-      extensions: [
-        basicSetup,
-        oneDark,
-        syntaxHighlighting(myHighlightStyle),
-        updateListener,
-        EditorView.lineWrapping
-      ]
-    });
-
-    editorView = new EditorView({
-      state,
-      parent: editorContainer
-    });
-  }
-
-  async function parseCode() {
-    try {
-      parsedBlocks = await invoke('parse_custom_language', { code });
-      await tick();
-      renderMermaid();
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function renderMermaid() {
-    const elements = document.querySelectorAll('.mermaid-diagram');
-    elements.forEach(async (el, index) => {
-      const graphDefinition = el.getAttribute('data-graph');
-      if (graphDefinition) {
-        try {
-          const id = `mermaid-svg-${index}-${Date.now()}`;
-          const { svg } = await mermaid.render(id, graphDefinition);
-          el.innerHTML = svg;
-        } catch (err) {
-          el.innerHTML = `<span style="color:#f48771;">Помилка графу: ${err}</span>`;
-        }
-      }
-    });
-  }
-
-  function parseAdifPairs(content: string) {
-    return content.split(',').map(pair => {
-      const [key, value] = pair.split(':');
-      return {
-        key: key ? key.trim() : '',
-        value: value ? value.trim().replace(/^"|"$/g, '') : ''
-      };
-    });
-  }
-
-  function addTemplate(template: string) {
-    if (!editorView) return;
-    const transaction = editorView.state.update({
-      changes: { from: editorView.state.doc.length, insert: `\n\n${template}` }
-    });
-    editorView.dispatch(transaction);
-  }
-
-  // Робота з файлами через Tauri dialog/fs плагіни
-  async function handleOpenFile() {
-    try {
-      const selected = await open({
-        multiple: false,
-        filters: [{ name: 'Custom Language', extensions: ['txt', 'dsl', 'md'] }]
-      });
-      if (selected && typeof selected === 'string') {
-        const content = await readTextFile(selected);
-        editorView.dispatch({
-          changes: { from: 0, to: editorView.state.doc.length, insert: content }
-        });
-      }
-    } catch (err) {
-      console.error('Помилка відкриття файлу:', err);
-    }
-  }
-
-  async function handleSaveFile() {
-    try {
-      const filePath = await save({
-        filters: [{ name: 'Custom Language', extensions: ['dsl', 'txt'] }]
-      });
-      if (filePath) {
-        await writeTextFile(filePath, code);
-        alert('Файл успішно збережено!');
-      }
-    } catch (err) {
-      console.error('Помилка збереження файлу:', err);
-    }
-  }
+  $: t = (key: MessageKey) => translate(profile.language, key);
+  $: normalizedSearch = searchQuery.trim().toUpperCase();
+  $: filteredRecords = normalizedSearch
+    ? records.filter((record) => [record.call, record.qth, record.band, record.mode, record.name, record.gridSquare]
+        .some((value) => value.toUpperCase().includes(normalizedSearch)))
+    : records;
+  $: todayCount = records.filter((record) => record.qsoDate === utcQsoDate()).length;
 
   onMount(() => {
-    initCodeMirror();
-    parseCode();
-    return () => editorView?.destroy();
+    profile = repository.loadProfile();
+    records = repository.list();
+    draft = emptyQso(profile);
+    ready = true;
   });
+
+  function flash(message: string): void {
+    toast = message;
+    window.setTimeout(() => { if (toast === message) toast = ''; }, 2600);
+  }
+
+  function chooseBand(band: string): void {
+    draft.band = band;
+  }
+
+  function chooseMode(mode: string): void {
+    draft.mode = mode;
+    draft.rstSent = defaultRst(mode);
+    draft.rstRcvd = defaultRst(mode);
+  }
+
+  function submitQso(): void {
+    draft.call = normalizeCallsign(draft.call);
+    if (!draft.call) { flash(t('requiredCall')); return; }
+    repository.save(draft);
+    records = repository.list();
+    draft = emptyQso(profile);
+    editing = false;
+    showAdvanced = false;
+    flash(t('saved'));
+  }
+
+  function editQso(record: Qso): void {
+    // A deep copy protects the persisted record until the operator explicitly presses Update.
+    draft = structuredClone(record);
+    editing = true;
+    showAdvanced = true;
+    activeTab = 'new';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEdit(): void {
+    draft = emptyQso(profile);
+    editing = false;
+    showAdvanced = false;
+  }
+
+  function removeQso(id: string): void {
+    if (!window.confirm(t('confirmDelete'))) return;
+    repository.remove(id);
+    records = repository.list();
+  }
+
+  function saveProfile(): void {
+    profile.callsign = normalizeCallsign(profile.callsign);
+    profile.operator = normalizeCallsign(profile.operator);
+    profile.gridSquare = profile.gridSquare.trim().toUpperCase();
+    repository.saveProfile(profile);
+    if (!editing) draft = emptyQso(profile);
+    flash(t('profileSaved'));
+  }
+
+  async function importFile(event: Event): Promise<void> {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const imported = parseAdif(await file.text(), profile);
+      repository.saveMany(imported);
+      records = repository.list();
+      flash(`${imported.length} ${t('imported')}`);
+      activeTab = 'log';
+    } catch (error) {
+      console.error('ADIF import failed:', error);
+      flash(t('importError'));
+    } finally {
+      input.value = '';
+    }
+  }
+
+  async function exportFile(): Promise<void> {
+    const content = exportAdif(records, '0.2.20');
+    try {
+      // Native save gives desktop/mobile users a predictable destination. Web builds use a download.
+      if ('__TAURI_INTERNALS__' in window) {
+        const path = await save({ defaultPath: `radio-log-${utcQsoDate()}.adi`, filters: [{ name: 'ADIF', extensions: ['adi', 'adif'] }] });
+        if (path) await writeTextFile(path, content);
+      } else {
+        const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+        const anchor = document.createElement('a');
+        anchor.href = url; anchor.download = `radio-log-${utcQsoDate()}.adi`; anchor.click();
+        URL.revokeObjectURL(url);
+      }
+      flash(t('exported'));
+    } catch (error) {
+      console.error('ADIF export failed:', error);
+      flash(t('importError'));
+    }
+  }
+
+  function displayDate(value: string): string {
+    return value.length === 8 ? `${value.slice(6, 8)}.${value.slice(4, 6)}.${value.slice(0, 4)}` : value;
+  }
+
+  function displayTime(value: string): string {
+    return value.length >= 4 ? `${value.slice(0, 2)}:${value.slice(2, 4)}` : value;
+  }
 </script>
 
-<div class="app-container">
-  <!-- Панель файлів та шаблонів -->
-  <aside class="sidebar">
-    <h3>Файли</h3>
-    <button class="btn-file" on:click={handleOpenFile}>📁 Відкрити</button>
-    <button class="btn-file" on:click={handleSaveFile}>💾 Зберегти</button>
+<svelte:head>
+  <title>{t('appName')}</title>
+  <meta name="theme-color" content="#071a19" />
+</svelte:head>
 
-    <hr class="divider" />
+{#if ready}
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">SR</span>
+        <div><strong>{t('appName')}</strong><small>{records.length} {t('contacts')} · {todayCount} {t('today').toLowerCase()}</small></div>
+      </div>
+      <button class="language" onclick={() => { profile.language = profile.language === 'uk' ? 'en' : 'uk'; repository.saveProfile(profile); }}>
+        {profile.language === 'uk' ? 'EN' : 'UA'}
+      </button>
+    </header>
 
-    <h3>Шаблони</h3>
-    <button on:click={() => addTemplate('#graph[NodeA -> NodeB]')}>+ Граф (#graph)</button>
-    <button on:click={() => addTemplate('#adif{CALL: "US5DEF", BAND: "40M", MODE: "FT8", RST: "-10"}')}>+ Log (#adif)</button>
-    <button on:click={() => addTemplate('# Новий розділ')}>+ Заголовок (#md)</button>
-    <button on:click={() => addTemplate('| Стовпець 1 | Стовпець 2 |\n| --- | --- |\n| Значення 1 | Значення 2 |')}>+ Таблиця</button>
-  </aside>
-
-  <!-- Редактор коду -->
-  <section class="editor-section">
-    <h3>Код мови</h3>
-    <div class="codemirror-wrapper" bind:this={editorContainer}></div>
-  </section>
-
-  <!-- Прев'ю -->
-  <section class="preview-section">
-    <h3>Візуальне представлення</h3>
-    <div class="preview-content">
-      {#each parsedBlocks as block}
-        {#if block.block_type === 'mermaid'}
-          <div class="block graph-block">
-            <span class="badge">Graph AST</span>
-            <div class="mermaid-diagram" data-graph={block.content}></div>
+    <main>
+      {#if activeTab === 'new'}
+        <section class="panel entry-panel">
+          <div class="section-heading">
+            <div><span class="eyebrow">UTC {displayTime(draft.timeOn)}</span><h1>{editing ? t('updateQso') : t('newQso')}</h1></div>
+            {#if editing}<button class="text-button" onclick={cancelEdit}>{t('cancel')}</button>{/if}
           </div>
-        {:else if block.block_type === 'adif'}
-          <div class="block adif-block">
-            <span class="badge">ADIF Record</span>
-            <div class="adif-grid">
-              {#each parseAdifPairs(block.content) as item}
-                <div class="adif-field">
-                  <span class="adif-label">{item.key}</span>
-                  <span class="adif-val">{item.value}</span>
-                </div>
-              {/each}
+
+          <label class="call-field">
+            <span>{t('call')}</span>
+            <input bind:value={draft.call} oninput={() => draft.call = draft.call.toUpperCase()} placeholder={t('callHint')} autocomplete="off" autocapitalize="characters" />
+          </label>
+
+          <fieldset>
+            <legend>{t('band')} · {t('quickPick')}</legend>
+            <div class="chips">
+              {#each quickBands as band}<button class:active={draft.band === band} onclick={() => chooseBand(band)}>{band}</button>{/each}
             </div>
+            <select bind:value={draft.band} aria-label={t('band')}>{#each BANDS as band}<option value={band}>{band}</option>{/each}</select>
+          </fieldset>
+
+          <fieldset>
+            <legend>{t('mode')} · {t('quickPick')}</legend>
+            <div class="chips">
+              {#each quickModes as mode}<button class:active={draft.mode === mode} onclick={() => chooseMode(mode)}>{mode}</button>{/each}
+            </div>
+            <select bind:value={draft.mode} onchange={() => chooseMode(draft.mode)} aria-label={t('mode')}>{#each MODES as mode}<option value={mode}>{mode}</option>{/each}</select>
+          </fieldset>
+
+          <div class="field-grid two">
+            <label><span>{t('rstSent')}</span><input bind:value={draft.rstSent} inputmode="text" /></label>
+            <label><span>{t('rstRcvd')}</span><input bind:value={draft.rstRcvd} inputmode="text" /></label>
           </div>
-        {:else}
-          <div class="block text-block markdown-body">
-            {@html marked.parse(block.content)}
+
+          <button class="advanced-toggle" onclick={() => showAdvanced = !showAdvanced} aria-expanded={showAdvanced}>
+            <span>{t('optional')}</span><span>{showAdvanced ? '−' : '+'}</span>
+          </button>
+
+          {#if showAdvanced}
+            <div class="advanced-fields">
+              <div class="field-grid two">
+                <label><span>{t('utcDate')}</span><input bind:value={draft.qsoDate} inputmode="numeric" maxlength="8" /></label>
+                <label><span>{t('utcTime')}</span><input bind:value={draft.timeOn} inputmode="numeric" maxlength="6" /></label>
+                <label><span>{t('frequency')}</span><input bind:value={draft.frequency} inputmode="decimal" placeholder="14.200" /></label>
+                <label><span>{t('power')}</span><input bind:value={draft.txPower} inputmode="decimal" /></label>
+                <label><span>{t('name')}</span><input bind:value={draft.name} /></label>
+                <label><span>{t('qth')}</span><input bind:value={draft.qth} /></label>
+                <label><span>{t('grid')}</span><input bind:value={draft.gridSquare} oninput={() => draft.gridSquare = draft.gridSquare.toUpperCase()} /></label>
+              </div>
+              <label><span>{t('comment')}</span><textarea bind:value={draft.comment} rows="3"></textarea></label>
+            </div>
+          {/if}
+
+          <button class="primary-action" onclick={submitQso}>{editing ? t('updateQso') : t('saveQso')}</button>
+        </section>
+      {:else if activeTab === 'log'}
+        <section class="panel log-panel">
+          <div class="section-heading"><div><span class="eyebrow">ADIF 3.1.7</span><h1>{t('logbook')}</h1></div><strong class="count">{filteredRecords.length}</strong></div>
+          <div class="toolbar">
+            <input class="search" bind:value={searchQuery} type="search" placeholder={t('search')} />
+            <button onclick={() => importInput.click()}>{t('importAdif')}</button>
+            <button onclick={exportFile} disabled={records.length === 0}>{t('exportAdif')}</button>
+            <input class="visually-hidden" bind:this={importInput} onchange={importFile} type="file" accept=".adi,.adif,.txt" />
           </div>
-        {/if}
-      {/each}
-    </div>
-  </section>
-</div>
+          <div class="qso-list">
+            {#each filteredRecords as record (record.id)}
+              <article class="qso-card">
+                <div class="qso-main"><strong>{record.call}</strong><span>{record.band} · {record.mode}</span></div>
+                <div class="qso-meta"><span>{displayDate(record.qsoDate)} · {displayTime(record.timeOn)} UTC</span>{#if record.qth}<span>{record.qth}</span>{/if}</div>
+                <div class="qso-rst"><span>↑ {record.rstSent || '—'}</span><span>↓ {record.rstRcvd || '—'}</span></div>
+                <div class="card-actions"><button onclick={() => editQso(record)}>{t('edit')}</button><button class="danger" onclick={() => removeQso(record.id)}>{t('remove')}</button></div>
+              </article>
+            {:else}
+              <div class="empty-state"><span>◌</span><p>{t('noQso')}</p></div>
+            {/each}
+          </div>
+        </section>
+      {:else if activeTab === 'notes'}
+        <section class="panel placeholder-panel"><span>◇</span><h1>{t('notes')}</h1><p>Markdown + Mermaid</p></section>
+      {:else}
+        <section class="panel settings-panel">
+          <div class="section-heading"><div><span class="eyebrow">ADIF</span><h1>{t('stationProfile')}</h1></div></div>
+          <div class="settings-form">
+            <label><span>{t('myCall')}</span><input bind:value={profile.callsign} oninput={() => profile.callsign = profile.callsign.toUpperCase()} /></label>
+            <label><span>{t('operator')}</span><input bind:value={profile.operator} oninput={() => profile.operator = profile.operator.toUpperCase()} /></label>
+            <label><span>{t('myGrid')}</span><input bind:value={profile.gridSquare} oninput={() => profile.gridSquare = profile.gridSquare.toUpperCase()} /></label>
+            <div class="field-grid two">
+              <label><span>{t('defaultBand')}</span><select bind:value={profile.defaultBand}>{#each BANDS as band}<option>{band}</option>{/each}</select></label>
+              <label><span>{t('defaultMode')}</span><select bind:value={profile.defaultMode}>{#each MODES as mode}<option>{mode}</option>{/each}</select></label>
+              <label><span>{t('defaultPower')}</span><input bind:value={profile.defaultPower} inputmode="decimal" /></label>
+              <label><span>{t('language')}</span><select bind:value={profile.language}><option value="uk">{t('ukrainian')}</option><option value="en">{t('english')}</option></select></label>
+            </div>
+            <button class="primary-action" onclick={saveProfile}>{t('saveProfile')}</button>
+          </div>
+        </section>
+      {/if}
+    </main>
+
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <button class:active={activeTab === 'new'} onclick={() => activeTab = 'new'}><span>＋</span>{t('newQso')}</button>
+      <button class:active={activeTab === 'log'} onclick={() => activeTab = 'log'}><span>☷</span>{t('logbook')}</button>
+      <button class:active={activeTab === 'notes'} onclick={() => activeTab = 'notes'}><span>◇</span>{t('notes')}</button>
+      <button class:active={activeTab === 'settings'} onclick={() => activeTab = 'settings'}><span>⚙</span>{t('settings')}</button>
+    </nav>
+    {#if toast}<div class="toast" role="status">{toast}</div>{/if}
+  </div>
+{/if}
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
-    background-color: #1e1e1e;
-    color: #d4d4d4;
+  :global(*) { box-sizing: border-box; }
+  :global(html) { background: #061312; }
+  :global(body) { margin: 0; color: #e9f4f1; background: radial-gradient(circle at 20% -10%, #174a42 0, #071a19 34%, #061312 76%); font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; min-width: 320px; }
+  :global(button), :global(input), :global(select), :global(textarea) { font: inherit; }
+  :global(button) { -webkit-tap-highlight-color: transparent; }
+  .app-shell { width: min(100%, 1080px); min-height: 100dvh; margin: 0 auto; padding-bottom: 92px; }
+  .topbar { height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid #ffffff12; background: #071a19d9; backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 10; }
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; color: #061312; background: #5be0bd; font-weight: 900; letter-spacing: -1px; box-shadow: 0 8px 28px #5be0bd36; }
+  .brand div { display: flex; flex-direction: column; min-width: 0; }
+  .brand strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand small { color: #8da8a1; margin-top: 2px; }
+  .language, .text-button { border: 1px solid #ffffff1f; background: #ffffff0a; color: #a9c5bd; border-radius: 10px; padding: 9px 11px; cursor: pointer; }
+  main { padding: 18px; }
+  .panel { max-width: 780px; margin: 0 auto; }
+  .section-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  h1 { margin: 2px 0 0; font-size: clamp(26px, 6vw, 38px); letter-spacing: -1.2px; }
+  .eyebrow { color: #5be0bd; text-transform: uppercase; font-size: 11px; font-weight: 800; letter-spacing: 1.6px; }
+  label { display: flex; flex-direction: column; gap: 7px; color: #a9c5bd; font-size: 13px; font-weight: 650; }
+  input, select, textarea { width: 100%; border: 1px solid #ffffff18; background: #102725; color: #eefaf6; border-radius: 12px; padding: 12px 13px; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #5be0bd; box-shadow: 0 0 0 3px #5be0bd1b; }
+  .call-field input { padding: 15px 16px; font: 800 clamp(26px, 8vw, 42px)/1 monospace; letter-spacing: 2px; text-transform: uppercase; }
+  fieldset { border: 0; padding: 0; margin: 22px 0 0; }
+  legend { color: #a9c5bd; font-size: 13px; font-weight: 650; margin-bottom: 9px; }
+  fieldset select { margin-top: 9px; }
+  .chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 7px; }
+  .chips button { min-height: 44px; border: 1px solid #ffffff17; border-radius: 11px; background: #102725; color: #c2d8d2; cursor: pointer; font-weight: 750; }
+  .chips button.active { color: #051513; background: #5be0bd; border-color: #5be0bd; box-shadow: 0 7px 20px #5be0bd25; }
+  .field-grid { display: grid; gap: 12px; margin-top: 18px; }
+  .field-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .advanced-toggle { display: flex; justify-content: space-between; width: 100%; margin: 20px 0 0; padding: 13px 4px; border: 0; border-top: 1px solid #ffffff14; border-bottom: 1px solid #ffffff14; background: transparent; color: #a9c5bd; cursor: pointer; }
+  .advanced-fields { display: grid; gap: 14px; animation: reveal .18s ease-out; }
+  .primary-action { width: 100%; min-height: 54px; margin-top: 22px; border: 0; border-radius: 14px; background: linear-gradient(135deg, #5be0bd, #42cba6); color: #041310; font-weight: 900; cursor: pointer; box-shadow: 0 12px 32px #43d2ad27; }
+  .toolbar { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-bottom: 16px; }
+  .toolbar button, .card-actions button { border: 1px solid #ffffff18; border-radius: 10px; background: #102725; color: #bcd4ce; padding: 10px 12px; cursor: pointer; }
+  .toolbar button:disabled { opacity: .4; }
+  .search { grid-column: 1 / -1; }
+  .count { display: grid; place-items: center; min-width: 46px; height: 38px; border-radius: 12px; color: #5be0bd; background: #5be0bd12; }
+  .qso-list { display: grid; gap: 10px; }
+  .qso-card { display: grid; grid-template-columns: minmax(110px, 1.1fr) minmax(150px, 1fr) auto; gap: 12px; align-items: center; padding: 15px; border: 1px solid #ffffff12; border-radius: 15px; background: #0d2321d9; box-shadow: 0 8px 30px #00000017; }
+  .qso-main, .qso-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .qso-main strong { color: #f4fffc; font: 900 21px/1 monospace; }
+  .qso-main span, .qso-meta span { color: #8da8a1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .qso-rst { display: flex; gap: 6px; color: #5be0bd; font: 700 12px monospace; }
+  .card-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 7px; border-top: 1px solid #ffffff0d; padding-top: 10px; }
+  .card-actions .danger { color: #ff948c; }
+  .empty-state, .placeholder-panel { text-align: center; color: #75918a; padding: 70px 20px; }
+  .empty-state span, .placeholder-panel > span { display: block; color: #5be0bd; font-size: 52px; }
+  .settings-form { display: grid; gap: 15px; }
+  .bottom-nav { position: fixed; z-index: 20; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 1080px); display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); border-top: 1px solid #ffffff14; background: #071a19f2; backdrop-filter: blur(20px); }
+  .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: transparent; color: #78958d; font-size: 10px; cursor: pointer; }
+  .bottom-nav button span { font-size: 23px; line-height: 1; }
+  .bottom-nav button.active { color: #5be0bd; }
+  .toast { position: fixed; z-index: 30; left: 50%; bottom: 90px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); padding: 12px 17px; border: 1px solid #5be0bd52; border-radius: 12px; background: #102b27; color: #dffaf2; box-shadow: 0 15px 40px #0008; animation: toast-in .2s ease-out; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+  @keyframes reveal { from { opacity: 0; transform: translateY(-5px); } }
+  @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+  @media (min-width: 760px) {
+    .app-shell { padding: 0 0 30px 210px; }
+    .topbar { margin-left: -210px; padding-left: 22px; }
+    .bottom-nav { left: calc(50% - 435px); transform: none; top: 72px; bottom: 0; width: 210px; display: flex; flex-direction: column; padding: 20px 12px; border-top: 0; border-right: 1px solid #ffffff12; }
+    .bottom-nav button { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 12px; border-radius: 11px; font-size: 13px; }
+    .bottom-nav button.active { background: #5be0bd12; }
+    main { padding: 32px; }
   }
-
-  .app-container {
-    display: flex;
-    height: 100vh;
-    box-sizing: border-box;
-    padding: 10px;
-    gap: 10px;
-  }
-
-  .sidebar {
-    width: 180px;
-    background-color: #252526;
-    padding: 15px;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid #3c3c3c;
-    margin: 5px 0;
-  }
-
-  .sidebar button {
-    background-color: #007acc;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    text-align: left;
-    font-size: 13px;
-  }
-
-  .sidebar button:hover {
-    background-color: #005999;
-  }
-
-  .sidebar .btn-file {
-    background-color: #3c3c3c;
-  }
-
-  .sidebar .btn-file:hover {
-    background-color: #505050;
-  }
-
-  .editor-section, .preview-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background-color: #252526;
-    padding: 15px;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .codemirror-wrapper {
-    flex: 1;
-    overflow: auto;
-    border: 1px solid #3c3c3c;
-    border-radius: 4px;
-    background-color: #282c34;
-  }
-
-  :global(.cm-editor) {
-    height: 100%;
-    font-family: 'Consolas', 'Fira Code', monospace;
-    font-size: 14px;
-  }
-
-  .preview-content {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .block {
-    position: relative;
-    padding: 12px;
-    border-radius: 6px;
-    border: 1px solid #3c3c3c;
-  }
-
-  .badge {
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    font-size: 10px;
-    color: #888;
-    background-color: #1e1e1e;
-    padding: 2px 6px;
-    border-radius: 3px;
-  }
-
-  .graph-block {
-    border-color: #264f78;
-    background-color: #112233;
-    padding-top: 25px;
-  }
-
-  .adif-block {
-    border-color: #2e6930;
-    background-color: #142915;
-    padding-top: 25px;
-  }
-
-  .adif-grid {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .adif-field {
-    display: flex;
-    flex-direction: column;
-    background: #1e1e1e;
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid #2e6930;
-  }
-
-  .adif-label {
-    font-size: 10px;
-    color: #4ec9b0;
-    font-weight: bold;
-  }
-
-  .adif-val {
-    font-size: 14px;
-    font-weight: bold;
-    color: #dcdcaa;
-  }
-
-  .text-block {
-    background-color: #1e1e1e;
-  }
-
-  /* Стилі для Markdown */
-  :global(.markdown-body h1) {
-    font-size: 1.5em;
-    margin-top: 0;
-    margin-bottom: 0.5em;
-    color: #569cd6;
-    border-bottom: 1px solid #3c3c3c;
-    padding-bottom: 4px;
-  }
-
-  :global(.markdown-body h2) {
-    font-size: 1.2em;
-    color: #4ec9b0;
-  }
-
-  :global(.markdown-body p) {
-    margin: 0.4em 0;
-  }
-
-  :global(.markdown-body table) {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 10px 0;
-  }
-
-  :global(.markdown-body th), :global(.markdown-body td) {
-    border: 1px solid #3c3c3c;
-    padding: 6px 12px;
-    text-align: left;
-  }
-
-  :global(.markdown-body th) {
-    background-color: #2d2d2d;
-    color: #4ec9b0;
-  }
-
-  :global(.markdown-body tr:nth-child(even)) {
-    background-color: #252526;
-  }
-
-  h3 {
-    margin-top: 0;
-    font-size: 16px;
-    color: #ffffff;
+  @media (max-width: 540px) {
+    .field-grid.two { grid-template-columns: 1fr 1fr; }
+    .qso-card { grid-template-columns: 1fr auto; }
+    .qso-meta { grid-column: 1; }
+    .qso-rst { grid-column: 2; grid-row: 1 / 3; flex-direction: column; }
+    .toolbar { grid-template-columns: 1fr 1fr; }
+    .toolbar button { padding: 10px 7px; font-size: 12px; }
   }
 </style>
