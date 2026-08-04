@@ -44,7 +44,13 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libgtk-3-dev \
+            patchelf \
+            pkg-config
 
       - name: Install frontend dependencies
         run: npm ci
@@ -64,7 +70,7 @@ jobs:
   # ==================== ARM LINUX (Raspberry Pi) ====================
   build-arm-linux:
     needs: build-desktop
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-arm   # ← нативний ARM64 runner
     steps:
       - uses: actions/checkout@v4
 
@@ -74,34 +80,40 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      - name: Install Rust with ARM target
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-unknown-linux-gnu
 
-      - name: Install cross-compiler
+      - name: Install dependencies (ARM64 native)
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-          sudo apt-get install -y libwebkit2gtk-4.1-dev:arm64 libappindicator3-dev:arm64 librsvg2-dev:arm64
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libgtk-3-dev \
+            patchelf \
+            pkg-config
 
       - name: Install frontend dependencies
         run: npm ci
 
       - name: Build ARM Linux
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: npx tauri build
+
+      - name: Collect ARM64 artifacts
         run: |
-          npx tauri build --target aarch64-unknown-linux-gnu
-          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/*.deb ./my-ide-arm64.deb || true
-          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/*.AppImage ./my-ide-arm64.AppImage || true
+          mkdir -p arm64-artifacts
+          cp src-tauri/target/release/bundle/deb/*.deb arm64-artifacts/ 2>/dev/null || true
+          cp src-tauri/target/release/bundle/appimage/*.AppImage arm64-artifacts/ 2>/dev/null || true
+          cp src-tauri/target/release/bundle/rpm/*.rpm arm64-artifacts/ 2>/dev/null || true
+          ls -la arm64-artifacts/
 
       - name: Upload ARM Linux to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
-          for f in ./my-ide-arm64.*; do
+          for f in arm64-artifacts/*; do
             [ -f "$f" ] && gh release upload "${{ github.ref_name }}" "$f" --clobber
           done
 
@@ -118,11 +130,18 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      - name: Install Flatpak tools
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
-          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libgtk-3-dev \
+            patchelf \
+            pkg-config \
+            flatpak \
+            flatpak-builder
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -130,18 +149,28 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Tauri app
+      - name: Build Tauri app (deb)
         run: npx tauri build
+
+      - name: Setup Flatpak repo
+        run: |
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Build Flatpak
         run: |
+          # Знаходимо створений deb
+          DEB_DIR=$(find src-tauri/target/release/bundle/deb -name "*.deb" -print -quit | xargs dirname)
+          DEB_FILE=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
+          
           mkdir -p flatpak-build
-          # Створюємо простий Flatpak manifest
+          
           cat > com.juv4uk.my-ide.yml <<'EOF'
           app-id: com.juv4uk.my-ide
           runtime: org.freedesktop.Platform
           runtime-version: '23.08'
           sdk: org.freedesktop.Sdk
+          base: org.electronjs.Electron2.BaseApp
+          base-version: '23.08'
           command: my-ide
           finish-args:
             - --socket=wayland
@@ -149,18 +178,29 @@ jobs:
             - --share=ipc
             - --share=network
             - --filesystem=home
+            - --device=dri
+            - --talk-name=org.freedesktop.Notifications
           modules:
             - name: my-ide
               buildsystem: simple
               build-commands:
-                - install -D src-tauri/target/release/bundle/deb/*/data/usr/bin/my-ide /app/bin/my-ide
-                - cp -r src-tauri/target/release/bundle/deb/*/data/usr/share /app/share
+                - ar x my-ide.deb
+                - tar -xf data.tar.*
+                - install -D usr/bin/my-ide /app/bin/my-ide
+                - cp -r usr/share /app/share
               sources:
-                - type: dir
-                  path: .
+                - type: file
+                  path: DEB_FILE_PLACEHOLDER
           EOF
-          flatpak-builder --repo=repo flatpak-build com.juv4uk.my-ide.yml || true
-          flatpak build-bundle repo my-ide.flatpak com.juv4uk.my-ide || true
+          
+          # Підставляємо реальний шлях до deb
+          sed -i "s|DEB_FILE_PLACEHOLDER|${DEB_FILE}|g" com.juv4uk.my-ide.yml
+          
+          # Встановлюємо runtime (потрібен для build)
+          sudo flatpak install -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
+          
+          flatpak-builder --repo=repo --force-clean flatpak-build com.juv4uk.my-ide.yml
+          flatpak build-bundle repo my-ide.flatpak com.juv4uk.my-ide
 
       - name: Upload Flatpak to release
         env:
@@ -198,11 +238,9 @@ jobs:
 
       - name: Build Web version
         run: |
-          # Збираємо тільки фронтенд для статичного хостингу
           npm run build
           mkdir -p web-dist
           cp -r build/* web-dist/ 2>/dev/null || cp -r dist/* web-dist/ 2>/dev/null || true
-          # Архівуємо
           zip -r my-ide-web.zip web-dist/
 
       - name: Upload Web to release
@@ -348,7 +386,7 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '26.6.0'
+          xcode-version: '16.4'
 
       - name: Install frontend dependencies
         run: npm ci
