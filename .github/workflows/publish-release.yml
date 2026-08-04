@@ -404,12 +404,12 @@ jobs:
       - name: Init iOS project
         run: npx tauri ios init --ci
 
-      - name: Resolve Swift dependencies (fix for swift-rs cache issue)
+      # EN: Tauri generates an Xcode project here, not a standalone Swift package.
+      # UK: Tauri створює тут Xcode-проєкт, а не окремий Swift-пакет.
+      # DE: Tauri erzeugt hier ein Xcode-Projekt und kein eigenständiges Swift-Paket.
+      - name: Clear stale SwiftPM cache | Очистити кеш SwiftPM | SwiftPM-Cache leeren
         run: |
           rm -rf ~/Library/Caches/org.swift.swiftpm/repositories/swift-rs-*
-          cd src-tauri/gen/apple
-          swift package resolve
-          cd -
 
       - name: Build iOS app (Simulator)
         run: npx tauri ios build --target aarch64-sim
