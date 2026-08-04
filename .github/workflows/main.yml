@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build-android:
@@ -127,7 +128,7 @@ jobs:
       - name: Upload Android APK to GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || 'v0.2.0' }}
+          tag_name: ${{ github.ref_name }}
           files: ${{ steps.find_apk.outputs.apk_path }}
           fail_on_unmatched_files: true
           draft: false
