@@ -1,53 +1,96 @@
-# release.ps1 — автоматичний реліз Signal & Radio IDE
-# Використання: .\release.ps1 0.2.8
-
+[CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true, Position = 0)]
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 
-Write-Host "🚀 Створення релізу v$Version" -ForegroundColor Cyan
-
-# 1. Перевір, що ми в корені репозиторія
-if (-not (Test-Path ".git")) {
-    Write-Error "❌ Це не Git-репозиторій. Запускай з кореня проєкту."
-    exit 1
+# EN: Stop before changing files when the repository is not clean.
+# UK: Zupynytysia do zminy failiv, yakshcho repozytorii ne chystyi.
+# DE: Vor Dateianderungen stoppen, wenn das Repository nicht sauber ist.
+if (-not (Test-Path -LiteralPath '.git') -or -not (Test-Path -LiteralPath 'package.json') -or -not (Test-Path -LiteralPath 'src-tauri/Cargo.toml')) {
+    throw 'Run this script from the repository root.'
 }
 
-# 2. Онови package.json
-Write-Host "📦 Оновлення package.json..." -ForegroundColor Yellow
-$json = Get-Content package.json -Raw | ConvertFrom-Json
-$json.version = $Version
-$json | ConvertTo-Json -Depth 10 | Set-Content package.json
+$pendingChanges = @(git status --porcelain)
+if ($LASTEXITCODE -ne 0) { throw 'Could not read git status.' }
+if ($pendingChanges.Count -gt 0) { throw 'Commit or stash existing changes first.' }
 
-# 3. Онови Cargo.toml
-Write-Host "🦀 Оновлення Cargo.toml..." -ForegroundColor Yellow
-$cargo = Get-Content src-tauri/Cargo.toml -Raw
-$cargo = $cargo -replace '^version = "[\d\.]+"', "version = `"$Version`""
-$cargo | Set-Content src-tauri/Cargo.toml
+$currentBranch = (git branch --show-current).Trim()
+if ($LASTEXITCODE -ne 0 -or $currentBranch -ne 'main') {
+    throw "Release must be created from main; current branch: $currentBranch"
+}
 
-# 4. Онови tauri.conf.json
-Write-Host "⚙️ Оновлення tauri.conf.json..." -ForegroundColor Yellow
-$tauri = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
-$tauri.version = $Version
-$tauri | ConvertTo-Json -Depth 10 | Set-Content src-tauri/tauri.conf.json
+git rev-parse --verify --quiet "refs/tags/v$Version" | Out-Null
+if ($LASTEXITCODE -eq 0) { throw "Tag v$Version already exists." }
 
-# 5. Закоміть
-Write-Host "💾 Коміт змін..." -ForegroundColor Yellow
-git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
-git commit -m "release: v$Version"
+Write-Host "Preparing Signal & Radio IDE v$Version" -ForegroundColor Cyan
 
-# 6. Запуш
-Write-Host "📤 Пуш на GitHub..." -ForegroundColor Yellow
-git push origin refs/heads/main
+# EN: npm keeps package.json and the root package-lock.json versions consistent.
+# UK: npm uzghodzhuie versii u package.json ta koreni package-lock.json.
+# DE: npm halt die Versionen in package.json und package-lock.json konsistent.
+npm.cmd version $Version --no-git-tag-version
+if ($LASTEXITCODE -ne 0) { throw 'npm version failed.' }
 
-# 7. Створи тег
-Write-Host "🏷️ Створення тегу v$Version..." -ForegroundColor Yellow
-$tag = "v$Version"
-git tag $tag
-git push origin $tag
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 
-Write-Host "✅ Готово! Workflow запустився автоматично." -ForegroundColor Green
-Write-Host "👀 Стеж за прогресом: https://github.com/juv4uk/my-ide/actions" -ForegroundColor Cyan
+function Set-FirstRegexMatch {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Pattern,
+        [Parameter(Mandatory = $true)][string]$Replacement,
+        [System.Text.RegularExpressions.RegexOptions]$Options = [System.Text.RegularExpressions.RegexOptions]::None
+    )
+
+    $content = [System.IO.File]::ReadAllText($Path)
+    $regex = [regex]::new($Pattern, $Options)
+    if (-not $regex.IsMatch($content)) { throw "Version entry not found in $Path" }
+    $updated = $regex.Replace($content, $Replacement, 1)
+    [System.IO.File]::WriteAllText($Path, $updated, $utf8NoBom)
+}
+
+# EN: Only these first matches are application versions.
+# UK: Lyshe tsi pershi zbiihy ye versiiamy zastosunku.
+# DE: Nur diese ersten Treffer sind Anwendungsversionen.
+Set-FirstRegexMatch -Path 'src-tauri/Cargo.toml' -Pattern '^version = "\d+\.\d+\.\d+"' -Replacement "version = `"$Version`"" -Options Multiline
+Set-FirstRegexMatch -Path 'src-tauri/tauri.conf.json' -Pattern '"version"\s*:\s*"\d+\.\d+\.\d+"' -Replacement "`"version`":  `"$Version`""
+
+Write-Host 'Running release checks...' -ForegroundColor Cyan
+cargo check --manifest-path src-tauri/Cargo.toml
+if ($LASTEXITCODE -ne 0) { throw 'cargo check failed.' }
+npm.cmd test
+if ($LASTEXITCODE -ne 0) { throw 'npm test failed.' }
+npm.cmd run check
+if ($LASTEXITCODE -ne 0) { throw 'npm run check failed.' }
+npm.cmd run build
+if ($LASTEXITCODE -ne 0) { throw 'npm run build failed.' }
+
+# EN: Refuse to publish changes outside the five version files.
+# UK: Ne publikuvaty zminy poza piatma failamy versii.
+# DE: Anderungen ausserhalb der funf Versionsdateien nicht veroffentlichen.
+$releaseFiles = @('package.json', 'package-lock.json', 'src-tauri/Cargo.toml', 'src-tauri/Cargo.lock', 'src-tauri/tauri.conf.json')
+$changedFiles = @(git status --porcelain | ForEach-Object { $_.Substring(3) })
+$unexpectedFiles = @($changedFiles | Where-Object { $_ -notin $releaseFiles })
+if ($unexpectedFiles.Count -gt 0) { throw "Unexpected changed files: $($unexpectedFiles -join ', ')" }
+
+# UTF-8 text is Base64 encoded so Windows PowerShell 5.1 can parse this BOM-less script safely.
+$commitTemplate = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('cmVsZWFzZTogdnswfSB8INCS0LjQv9GD0YHQuiB2ezB9IHwgVmVyw7ZmZmVudGxpY2h1bmcgdnswfQ=='))
+$tagTemplate = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('U2lnbmFsICYgUmFkaW8gSURFIHZ7MH0gfCDQktC40L/Rg9GB0LogfCBWZXLDtmZmZW50bGljaHVuZw=='))
+$commitMessage = $commitTemplate -f $Version
+$tagMessage = $tagTemplate -f $Version
+
+git add -- $releaseFiles
+if ($LASTEXITCODE -ne 0) { throw 'git add failed.' }
+git commit -m $commitMessage
+if ($LASTEXITCODE -ne 0) { throw 'git commit failed.' }
+git tag -a "v$Version" -m $tagMessage
+if ($LASTEXITCODE -ne 0) { throw 'git tag failed.' }
+
+# EN/UK/DE: Atomic push prevents a branch-only or tag-only partial release.
+git push --atomic origin main "v$Version"
+if ($LASTEXITCODE -ne 0) { throw 'Atomic push failed; commit and tag remain local for inspection.' }
+
+Write-Host "Release v$Version pushed successfully." -ForegroundColor Green
