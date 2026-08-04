@@ -198,7 +198,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: |
-            aarch64-apple-ios-sim
+            aarch64-sim
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -209,7 +209,7 @@ jobs:
         run: npm ci
 
       - name: Build iOS app (Simulator)
-        run: npx tauri ios build --target aarch64-apple-ios-sim
+        run: npx tauri ios build --target aarch64-sim
 
       - name: Find iOS .app bundle
         id: find_app
