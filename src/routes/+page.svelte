@@ -10,6 +10,7 @@
   type Tab = 'new' | 'log' | 'notes' | 'settings';
 
   const repository = new QsoRepository();
+  const NOTES_KEY = 'signal-radio-ide:field-notes:v1';
   const quickBands = ['80M', '40M', '20M', '15M', '10M', '2M'];
   const quickModes = ['SSB', 'CW', 'FT8', 'FM'];
 
@@ -23,6 +24,12 @@
   let ready = false;
   let toast = '';
   let importInput: HTMLInputElement;
+  let fieldNotes = '';
+  let renderedMarkdown = '';
+  let mermaidSvg = '';
+  let noteRenderError = '';
+  let noteRenderTimer: number | undefined;
+  let noteRenderRevision = 0;
 
   $: t = (key: MessageKey) => translate(profile.language, key);
   $: normalizedSearch = searchQuery.trim().toUpperCase();
@@ -36,6 +43,7 @@
     profile = repository.loadProfile();
     records = repository.list();
     draft = emptyQso(profile);
+    fieldNotes = localStorage.getItem(NOTES_KEY) ?? '';
     ready = true;
   });
 
@@ -140,6 +148,78 @@
   function displayTime(value: string): string {
     return value.length >= 4 ? `${value.slice(0, 2)}:${value.slice(2, 4)}` : value;
   }
+
+  function openNotes(): void {
+    activeTab = 'notes';
+    scheduleNoteRender();
+  }
+
+  function scheduleNoteRender(): void {
+    localStorage.setItem(NOTES_KEY, fieldNotes);
+    if (noteRenderTimer) window.clearTimeout(noteRenderTimer);
+    noteRenderTimer = window.setTimeout(renderNotes, 220);
+  }
+
+  async function renderNotes(): Promise<void> {
+    const revision = ++noteRenderRevision;
+    const mermaidMatch = fieldNotes.match(/```mermaid\s*\n([\s\S]*?)```/i);
+    const markdownSource = fieldNotes.replace(/```mermaid\s*\n[\s\S]*?```/gi, '');
+    noteRenderError = '';
+
+    try {
+      // Lazy imports keep the fast QSO entry screen small; these editors are optional tools.
+      const [{ marked, Renderer }, mermaidModule] = await Promise.all([import('marked'), import('mermaid')]);
+      if (revision !== noteRenderRevision) return;
+
+      const renderer = new Renderer();
+      renderer.html = ({ text }) => escapeHtml(text);
+      renderedMarkdown = sanitizeHtml(await marked.parse(markdownSource, { renderer }));
+
+      mermaidSvg = '';
+      if (mermaidMatch?.[1].trim()) {
+        const mermaid = mermaidModule.default;
+        mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'strict' });
+        const result = await mermaid.render(`field-note-${revision}-${Date.now()}`, mermaidMatch[1].trim());
+        if (revision === noteRenderRevision) mermaidSvg = sanitizeGeneratedSvg(result.svg);
+      }
+    } catch (error) {
+      console.error('Note preview failed:', error);
+      if (revision === noteRenderRevision) noteRenderError = t('diagramError');
+    }
+  }
+
+  function escapeHtml(value: string): string {
+    return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+  }
+
+  /** Defense in depth for both Markdown and generated SVG before Svelte's {@html} boundary. */
+  function sanitizeHtml(value: string): string {
+    const document = new DOMParser().parseFromString(value, 'text/html');
+    document.querySelectorAll('script, iframe, object, embed, style, link, meta, foreignObject').forEach((node) => node.remove());
+    document.querySelectorAll('*').forEach((element) => {
+      for (const attribute of [...element.attributes]) {
+        const name = attribute.name.toLowerCase();
+        const content = attribute.value.trim().toLowerCase();
+        if (name.startsWith('on') || ((name === 'href' || name === 'src' || name === 'xlink:href') && /^(javascript|data):/.test(content))) {
+          element.removeAttribute(attribute.name);
+        }
+      }
+    });
+    return document.body.innerHTML;
+  }
+
+  function sanitizeGeneratedSvg(value: string): string {
+    const document = new DOMParser().parseFromString(value, 'image/svg+xml');
+    document.querySelectorAll('script, foreignObject').forEach((node) => node.remove());
+    document.querySelectorAll('*').forEach((element) => {
+      for (const attribute of [...element.attributes]) {
+        if (attribute.name.toLowerCase().startsWith('on') || /^(javascript|data):/i.test(attribute.value.trim())) {
+          element.removeAttribute(attribute.name);
+        }
+      }
+    });
+    return document.documentElement.outerHTML;
+  }
 </script>
 
 <svelte:head>
@@ -237,7 +317,20 @@
           </div>
         </section>
       {:else if activeTab === 'notes'}
-        <section class="panel placeholder-panel"><span>◇</span><h1>{t('notes')}</h1><p>Markdown + Mermaid</p></section>
+        <section class="panel notes-panel">
+          <div class="section-heading"><div><span class="eyebrow">Markdown + Mermaid</span><h1>{t('fieldNotes')}</h1></div><small>{t('autosaved')}</small></div>
+          <p class="notes-hint">{t('notesHint')}</p>
+          <div class="notes-workspace">
+            <label class="note-editor"><span>Markdown</span><textarea bind:value={fieldNotes} oninput={scheduleNoteRender} placeholder={t('notePlaceholder')} spellcheck="true"></textarea></label>
+            <section class="note-preview" aria-live="polite">
+              <span class="preview-label">{t('preview')}</span>
+              {#if renderedMarkdown}<div class="markdown-body">{@html renderedMarkdown}</div>{/if}
+              {#if mermaidSvg}<div class="mermaid-preview">{@html mermaidSvg}</div>{/if}
+              {#if noteRenderError}<p class="preview-error">{noteRenderError}</p>{/if}
+              {#if !renderedMarkdown && !mermaidSvg && !noteRenderError}<div class="preview-empty">◇</div>{/if}
+            </section>
+          </div>
+        </section>
       {:else}
         <section class="panel settings-panel">
           <div class="section-heading"><div><span class="eyebrow">ADIF</span><h1>{t('stationProfile')}</h1></div></div>
@@ -260,7 +353,7 @@
     <nav class="bottom-nav" aria-label="Primary navigation">
       <button class:active={activeTab === 'new'} onclick={() => activeTab = 'new'}><span>＋</span>{t('newQso')}</button>
       <button class:active={activeTab === 'log'} onclick={() => activeTab = 'log'}><span>☷</span>{t('logbook')}</button>
-      <button class:active={activeTab === 'notes'} onclick={() => activeTab = 'notes'}><span>◇</span>{t('notes')}</button>
+      <button class:active={activeTab === 'notes'} onclick={openNotes}><span>◇</span>{t('notes')}</button>
       <button class:active={activeTab === 'settings'} onclick={() => activeTab = 'settings'}><span>⚙</span>{t('settings')}</button>
     </nav>
     {#if toast}<div class="toast" role="status">{toast}</div>{/if}
@@ -314,9 +407,26 @@
   .qso-rst { display: flex; gap: 6px; color: #5be0bd; font: 700 12px monospace; }
   .card-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 7px; border-top: 1px solid #ffffff0d; padding-top: 10px; }
   .card-actions .danger { color: #ff948c; }
-  .empty-state, .placeholder-panel { text-align: center; color: #75918a; padding: 70px 20px; }
-  .empty-state span, .placeholder-panel > span { display: block; color: #5be0bd; font-size: 52px; }
+  .empty-state { text-align: center; color: #75918a; padding: 70px 20px; }
+  .empty-state span { display: block; color: #5be0bd; font-size: 52px; }
   .settings-form { display: grid; gap: 15px; }
+  .notes-panel .section-heading small { color: #78958d; }
+  .notes-hint { color: #8da8a1; margin: -8px 0 18px; line-height: 1.5; }
+  .notes-workspace { display: grid; gap: 14px; }
+  .note-editor textarea { min-height: 270px; resize: vertical; font-family: 'Cascadia Code', Consolas, monospace; line-height: 1.55; }
+  .note-preview { min-height: 270px; overflow: auto; padding: 18px; border: 1px solid #ffffff12; border-radius: 14px; background: #0d2321d9; }
+  .preview-label { display: block; margin-bottom: 14px; color: #5be0bd; text-transform: uppercase; font-size: 10px; font-weight: 800; letter-spacing: 1.4px; }
+  .preview-empty { display: grid; place-items: center; min-height: 190px; color: #31534c; font-size: 48px; }
+  .preview-error { color: #ff948c; }
+  .mermaid-preview { margin-top: 18px; padding-top: 18px; border-top: 1px solid #ffffff12; overflow-x: auto; }
+  :global(.markdown-body h1), :global(.markdown-body h2), :global(.markdown-body h3) { color: #eafff9; margin: 1em 0 .45em; }
+  :global(.markdown-body h1:first-child) { margin-top: 0; }
+  :global(.markdown-body p), :global(.markdown-body li) { color: #b7d0c9; line-height: 1.65; }
+  :global(.markdown-body a) { color: #5be0bd; }
+  :global(.markdown-body code) { padding: 2px 5px; border-radius: 5px; background: #061312; color: #8ef1d4; }
+  :global(.markdown-body pre) { overflow: auto; padding: 13px; border-radius: 10px; background: #061312; }
+  :global(.markdown-body table) { width: 100%; border-collapse: collapse; }
+  :global(.markdown-body th), :global(.markdown-body td) { padding: 8px; border: 1px solid #ffffff1c; text-align: left; }
   .bottom-nav { position: fixed; z-index: 20; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 1080px); display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); border-top: 1px solid #ffffff14; background: #071a19f2; backdrop-filter: blur(20px); }
   .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: transparent; color: #78958d; font-size: 10px; cursor: pointer; }
   .bottom-nav button span { font-size: 23px; line-height: 1; }
@@ -332,6 +442,7 @@
     .bottom-nav button { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 12px; border-radius: 11px; font-size: 13px; }
     .bottom-nav button.active { background: #5be0bd12; }
     main { padding: 32px; }
+    .notes-workspace { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 540px) {
     .field-grid.two { grid-template-columns: 1fr 1fr; }

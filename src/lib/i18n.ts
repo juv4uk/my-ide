@@ -13,7 +13,10 @@ const messages = {
     stationProfile: 'Station profile', myCall: 'My callsign', operator: 'Operator', myGrid: 'My grid square',
     defaultBand: 'Default band', defaultMode: 'Default mode', defaultPower: 'Power (W)', language: 'Language',
     saveProfile: 'Save profile', profileSaved: 'Station profile saved', english: 'English', ukrainian: 'Українська',
-    contacts: 'contacts', all: 'All', today: 'Today', quickPick: 'Quick select', power: 'TX power (W)'
+    contacts: 'contacts', all: 'All', today: 'Today', quickPick: 'Quick select', power: 'TX power (W)',
+    fieldNotes: 'Field notes', notesHint: 'Write Markdown and add one ```mermaid block for a station diagram.',
+    notePlaceholder: '# Activation notes\n\nConditions, antenna setup, observations…', preview: 'Preview', autosaved: 'Saved automatically',
+    diagramError: 'The Mermaid diagram could not be rendered'
   },
   uk: {
     appName: 'Signal & Radio Log', newQso: 'Нове QSO', logbook: 'Журнал', notes: 'Нотатки', settings: 'Станція',
@@ -28,7 +31,10 @@ const messages = {
     stationProfile: 'Профіль станції', myCall: 'Мій позивний', operator: 'Оператор', myGrid: 'Мій локатор',
     defaultBand: 'Типовий діапазон', defaultMode: 'Типовий режим', defaultPower: 'Потужність (Вт)', language: 'Мова',
     saveProfile: 'Зберегти профіль', profileSaved: 'Профіль станції збережено', english: 'English', ukrainian: 'Українська',
-    contacts: 'контактів', all: 'Усі', today: 'Сьогодні', quickPick: 'Швидкий вибір', power: 'Потужність TX (Вт)'
+    contacts: 'контактів', all: 'Усі', today: 'Сьогодні', quickPick: 'Швидкий вибір', power: 'Потужність TX (Вт)',
+    fieldNotes: 'Польові нотатки', notesHint: 'Пишіть у Markdown і додайте один блок ```mermaid для схеми станції.',
+    notePlaceholder: '# Нотатки активації\n\nУмови, антена, спостереження…', preview: 'Перегляд', autosaved: 'Зберігається автоматично',
+    diagramError: 'Не вдалося побудувати Mermaid-схему'
   }
 } as const;
 
