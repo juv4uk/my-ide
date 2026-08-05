@@ -340,7 +340,7 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
-        <img class="brand-mark" src="/brand-icon.svg" alt="" />
+        <img class="brand-mark" src="./brand-icon.svg" alt="" />
         <div><strong>{t('appName')}</strong><small>{records.length} {t('contacts')} · {todayCount} {t('today').toLowerCase()}</small></div>
       </div>
       <button class="language" onclick={cycleLanguage} aria-label={`${t('language')}: ${languageCode(nextLanguage())}`} title={`${t('language')}: ${languageCode(nextLanguage())}`}>

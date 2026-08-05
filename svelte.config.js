@@ -9,6 +9,14 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 const config = {
   preprocess: vitePreprocess(),
   kit: {
+    // The release workflow produces a portable Web ZIP that users can open
+    // directly from disk. Inline JS/CSS avoids Chromium's file:// module CORS.
+    output: {
+      bundleStrategy: process.env.BUILD_TARGET === "web" ? "inline" : "split",
+    },
+    paths: {
+      relative: process.env.BUILD_TARGET === "web",
+    },
     adapter: adapter({
       fallback: "index.html",
     }),

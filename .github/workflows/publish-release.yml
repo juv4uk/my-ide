@@ -227,10 +227,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Web static version with relative paths
+      - name: Build portable single-file Web version
         env:
           BUILD_TARGET: web
-          BASE_PATH: './'   # Дозволяє відкривати index.html локально без CORS
         run: |
           npm run build
 
@@ -255,6 +254,10 @@ jobs:
           cp -r $BUILD_DIR/* web-dist/
           if [ ! -f "web-dist/index.html" ]; then
             echo "ERROR: index.html not found in build output"
+            exit 1
+          fi
+          if grep -Eq '<script[^>]+src=|<link[^>]+rel="modulepreload"|(href|src)="/(_app|brand-icon|favicon|apple-touch-icon)' web-dist/index.html; then
+            echo "ERROR: Web build still references external or root-relative assets"
             exit 1
           fi
           zip -r "my-ide_${VERSION}_web.zip" web-dist/
