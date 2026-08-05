@@ -253,7 +253,7 @@ jobs:
           echo "=== Contents of build/ ==="
           ls -la build/ || ls -la dist/ || (echo "No build output found!" && exit 1)
 
-      - name: Package Web into zip
+      - name: Create standalone Web HTML
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           if [ -d "build" ]; then
@@ -265,17 +265,13 @@ jobs:
             exit 1
           fi
 
-          mkdir -p web-dist
-          cp -r $BUILD_DIR/* web-dist/
-          if [ ! -f "web-dist/index.html" ]; then
+          if [ ! -f "$BUILD_DIR/index.html" ]; then
             echo "ERROR: index.html not found in build output"
             exit 1
           fi
-          if grep -Eq '<script[^>]+src=|<link[^>]+rel="modulepreload"|(href|src)="/(_app|brand-icon|favicon|apple-touch-icon)' web-dist/index.html; then
-            echo "ERROR: Web build still references external or root-relative assets"
-            exit 1
-          fi
-          zip -r "my-ide_${VERSION}_web.zip" web-dist/
+          node scripts/make-portable-web.mjs \
+            "$BUILD_DIR/index.html" \
+            "my-ide_${VERSION}_web.html"
 
       - name: Upload Web to release
         env:
@@ -283,7 +279,7 @@ jobs:
         run: |
           set -euxo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
-          WEB_PATH="my-ide_${VERSION}_web.zip"
+          WEB_PATH="my-ide_${VERSION}_web.html"
           test -f "$WEB_PATH"
           gh release upload "${{ github.ref_name }}" "$WEB_PATH" --clobber
 

@@ -17,6 +17,18 @@ const config = {
     paths: {
       relative: process.env.BUILD_TARGET === "web",
     },
+    // EN: A file:// URL contains the full Windows path in its pathname. Hash
+    // routing keeps that path out of SvelteKit route matching, so index.html
+    // opens as the root page instead of a false 404.
+    // UK: URL file:// містить повний шлях Windows у pathname. Hash-маршрутизація
+    // не передає цей шлях роутеру SvelteKit, тому index.html відкривається як
+    // головна сторінка, а не як хибна помилка 404.
+    // DE: Eine file://-URL enthält den vollständigen Windows-Pfad im pathname.
+    // Hash-Routing hält ihn aus dem SvelteKit-Routing heraus, damit index.html
+    // als Startseite und nicht als falsche 404-Seite geöffnet wird.
+    router: {
+      type: process.env.BUILD_TARGET === "web" ? "hash" : "pathname",
+    },
     adapter: adapter({
       fallback: "index.html",
     }),
