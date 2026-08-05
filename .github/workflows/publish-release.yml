@@ -55,6 +55,25 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Read release notes
+        id: release_notes
+        shell: bash
+        run: |
+          NOTES_PATH=".github/release-notes/${GITHUB_REF_NAME}.md"
+          {
+            echo 'body<<RELEASE_NOTES_EOF'
+            if [ -f "$NOTES_PATH" ]; then
+              cat "$NOTES_PATH"
+            else
+              echo 'Release notes are generated automatically from the changes included in this version.'
+              echo
+              echo 'Нотатки до релізу автоматично сформовано зі змін, що увійшли до цієї версії.'
+              echo
+              echo 'Die Versionshinweise werden automatisch aus den in dieser Version enthaltenen Änderungen erstellt.'
+            fi
+            echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and publish desktop
         uses: tauri-apps/tauri-action@v0
         env:
@@ -62,12 +81,8 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Signal & Radio Log ${{ github.ref_name }}'
-          releaseBody: |
-            Offline-first amateur-radio logbook for Windows, Linux, macOS, Android, iOS Simulator, ARM Linux, Flatpak, and Web.
-
-            Офлайн-журнал радіоаматора для Windows, Linux, macOS, Android, iOS Simulator, ARM Linux, Flatpak і Web.
-
-            Offline-Amateurfunk-Logbuch für Windows, Linux, macOS, Android, iOS Simulator, ARM Linux, Flatpak und Web.
+          releaseBody: ${{ steps.release_notes.outputs.body }}
+          generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
