@@ -271,15 +271,14 @@ jobs:
           fi
           node scripts/make-portable-web.mjs \
             "$BUILD_DIR/index.html" \
-            "my-ide_${VERSION}_web.html"
+            "signal-radio-log-web.html"
 
       - name: Upload Web to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          WEB_PATH="my-ide_${VERSION}_web.html"
+          WEB_PATH="signal-radio-log-web.html"
           test -f "$WEB_PATH"
           gh release upload "${{ github.ref_name }}" "$WEB_PATH" --clobber
 
