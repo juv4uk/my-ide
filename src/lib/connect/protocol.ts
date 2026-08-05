@@ -1,3 +1,5 @@
+import { createLocalId } from '../qso.js';
+
 export type TransportKind = 'relay' | 'webrtc' | 'lora';
 
 export interface QsoInvite {
@@ -95,7 +97,7 @@ export async function encryptMessage(invite: QsoInvite, sender: string, message:
   const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext));
   return {
     version: 1,
-    id: crypto.randomUUID(),
+    id: createLocalId(),
     roomId: invite.roomId,
     createdAt: new Date().toISOString(),
     iv: toBase64Url(iv),

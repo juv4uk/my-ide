@@ -50,11 +50,27 @@ export function defaultRst(mode: string): string {
   return '59';
 }
 
+/**
+ * Create a local identifier even when a WebView does not expose randomUUID().
+ *
+ * Modern secure contexts use the native UUID implementation. Older WebViews and
+ * LAN previews still provide strong random bytes, so this remains fully offline.
+ */
+export function createLocalId(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0'));
+  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
+}
+
 export function emptyQso(profile: StationProfile, now = new Date()): Qso {
   const timestamp = now.toISOString();
   const rst = defaultRst(profile.defaultMode);
   return {
-    id: crypto.randomUUID(), call: '', qsoDate: utcQsoDate(now), timeOn: utcQsoTime(now),
+    id: createLocalId(), call: '', qsoDate: utcQsoDate(now), timeOn: utcQsoTime(now),
     band: profile.defaultBand, frequency: '', mode: profile.defaultMode, rstSent: rst, rstRcvd: rst,
     name: '', qth: '', gridSquare: '', comment: '', stationCallsign: profile.callsign,
     operator: profile.operator, myGridSquare: profile.gridSquare, txPower: profile.defaultPower,

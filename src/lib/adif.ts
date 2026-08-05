@@ -1,4 +1,4 @@
-import type { Qso, StationProfile } from './qso.js';
+import { createLocalId, type Qso, type StationProfile } from './qso.js';
 
 const FIELD_MAP: Record<string, keyof Qso> = {
   CALL: 'call', QSO_DATE: 'qsoDate', TIME_ON: 'timeOn', BAND: 'band', FREQ: 'frequency',
@@ -69,7 +69,7 @@ export function parseAdif(input: string, profile: StationProfile): Qso[] {
 function fieldsToQso(fields: Record<string, string>, profile: StationProfile): Qso {
   const now = new Date().toISOString();
   const qso: Qso = {
-    id: crypto.randomUUID(), call: '', qsoDate: '', timeOn: '', band: '', frequency: '', mode: '',
+    id: createLocalId(), call: '', qsoDate: '', timeOn: '', band: '', frequency: '', mode: '',
     rstSent: '', rstRcvd: '', name: '', qth: '', gridSquare: '', comment: '', stationCallsign: profile.callsign,
     operator: profile.operator, myGridSquare: profile.gridSquare, txPower: profile.defaultPower,
     createdAt: now, updatedAt: now, extraFields: {}
