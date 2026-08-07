@@ -9,21 +9,61 @@
   let listening = $state(false);
   let statusMessage = $state('');
   let entries = $state<LogEntry[]>([]);
+  let nextSlotSeconds = $state(0);
   let stream: MediaStream | null = null;
   let audioContext: AudioContext | null = null;
   let processor: ScriptProcessorNode | null = null;
   let source: MediaStreamAudioSourceNode | null = null;
   let chunk: number[] = [];
+  let inputRate = 0;
+  let boundaryTimer: ReturnType<typeof setTimeout> | null = null;
+  let countdownInterval: ReturnType<typeof setInterval> | null = null;
+  let awaitingFirstBoundary = true;
 
-  // EN: FT8 slots start on UTC 15-second boundaries. We resample the phone/PC
-  // mic's native sample rate down to a rolling buffer and hand a 15 s window
-  // to the decoder each time one fills up. This is a best-effort cadence, not
-  // strictly UTC-aligned yet — good enough to prove decoding works end to
-  // end; slot alignment is a follow-up.
-  // UK: Слоти FT8 починаються на межах UTC по 15с. Мікрофон ресемплюємо в
-  // буфер, що котиться, і кожні 15с віддаємо вікно в декодер. Це орієнтовний
-  // темп, ще не строго прив'язаний до UTC — достатньо, щоб довести, що
-  // декодування працює наскрізь; вирівнювання по слотах — наступний крок.
+  const SLOT_MS = FT8_CYCLE_SECONDS * 1000;
+
+  // EN: FT8 slots start on UTC 15-second boundaries (…00, …15, …30, …45).
+  // Cutting the capture buffer by elapsed sample count instead drifts away
+  // from those boundaries within a cycle or two, so messages land on the
+  // seam between two buffers and never decode. Instead we schedule the cut
+  // itself against the wall clock, recomputing the delay to the *next*
+  // boundary every time (self-correcting — no drift accumulates even if a
+  // single setTimeout fires a few ms late). The very first tick after
+  // pressing Start is discarded: it covers whatever partial, unaligned
+  // audio arrived between the click and the first boundary, not a full
+  // inter-boundary window.
+  // UK: Слоти FT8 починаються рівно на межах UTC по 15с (…00, …15, …30,
+  // …45). Різати буфер за кількістю семплів дрейфує від цих меж уже за
+  // цикл-два, і повідомлення потрапляють на стик двох буферів і не
+  // декодуються. Натомість момент розрізу планується по годиннику,
+  // з перерахунком затримки до *наступної* межі щоразу — самокорекція без
+  // накопичення дрейфу. Перший тик після натискання Start відкидається:
+  // він покриває нестійкий шматок аудіо між кліком і першою межею, а не
+  // повне міжмежове вікно.
+  // DE: FT8-Slots beginnen exakt an UTC-15-Sekunden-Grenzen. Den Puffer
+  // nach Samplezahl zu schneiden driftet innerhalb weniger Zyklen von
+  // diesen Grenzen ab. Stattdessen wird der Schnitt selbst per Wanduhr
+  // geplant, mit Neuberechnung der Verzögerung bei jedem Tick —
+  // selbstkorrigierend, kein Drift. Der erste Tick nach dem Start wird
+  // verworfen.
+  function msUntilNextBoundary(): number {
+    return SLOT_MS - (Date.now() % SLOT_MS);
+  }
+
+  function scheduleBoundary() {
+    boundaryTimer = setTimeout(onBoundary, msUntilNextBoundary());
+  }
+
+  function onBoundary() {
+    const captured = chunk;
+    chunk = [];
+    if (!awaitingFirstBoundary && captured.length > 0) {
+      void processCapture(new Float32Array(captured), inputRate);
+    }
+    awaitingFirstBoundary = false;
+    scheduleBoundary();
+  }
+
   async function startListening() {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 }, video: false });
@@ -39,22 +79,22 @@
     // AudioWorklet migration is worth revisiting once mobile audio capture
     // is validated on-device.
     processor = audioContext.createScriptProcessor(4096, 1, 1);
-    const inputRate = audioContext.sampleRate;
+    inputRate = audioContext.sampleRate;
 
     processor.onaudioprocess = (event) => {
       const input = event.inputBuffer.getChannelData(0);
       for (let i = 0; i < input.length; i++) chunk.push(input[i]);
-
-      const chunkSeconds = chunk.length / inputRate;
-      if (chunkSeconds >= FT8_CYCLE_SECONDS) {
-        const captured = chunk;
-        chunk = [];
-        void processCapture(new Float32Array(captured), inputRate);
-      }
     };
 
     source.connect(processor);
     processor.connect(audioContext.destination);
+
+    awaitingFirstBoundary = true;
+    scheduleBoundary();
+    countdownInterval = setInterval(() => {
+      nextSlotSeconds = Math.ceil(msUntilNextBoundary() / 1000);
+    }, 200);
+
     listening = true;
     statusMessage = '';
   }
@@ -64,10 +104,14 @@
     source?.disconnect();
     stream?.getTracks().forEach((track) => track.stop());
     void audioContext?.close();
+    if (boundaryTimer) clearTimeout(boundaryTimer);
+    if (countdownInterval) clearInterval(countdownInterval);
     processor = null;
     source = null;
     stream = null;
     audioContext = null;
+    boundaryTimer = null;
+    countdownInterval = null;
     chunk = [];
     listening = false;
   }
