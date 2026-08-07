@@ -17,7 +17,7 @@
 import createDecodeModule from 'ft8js/wasm/decode.js';
 // @ts-expect-error ft8js ships this as a plain .js Emscripten module without types
 import createEncodeModule from 'ft8js/wasm/encode.js';
-import { FT8_DECODE_WASM_BASE64, FT8_ENCODE_WASM_BASE64 } from './wasm-assets';
+import { FT8_DECODE_WASM_BASE64, FT8_ENCODE_WASM_BASE64 } from './wasm-assets.js';
 
 export type Ft8ReceivedMessage = {
   db: number;
