@@ -1,6 +1,6 @@
 {
     "name": "my-ide",
-    "version": "0.5.5",
+    "version": "0.6.0",
     "description": "Offline amateur radio logbook / Офлайн-журнал радіоаматора / Offline-Amateurfunk-Logbuch",
     "type": "module",
     "scripts": {
