@@ -173,6 +173,9 @@
     {:else}
       <button class="ft8-toggle ft8-toggle--active" onclick={stopListening}>{t('ft8Stop')}</button>
     {/if}
+    {#if listening}
+      <span class="ft8-countdown">{t('ft8NextSlot')} {nextSlotSeconds}s</span>
+    {/if}
     <span class="ft8-hint">{t('ft8Hint')}</span>
   </div>
 
@@ -211,6 +214,7 @@
   }
   .ft8-toggle--active { background: #ff948c; }
   .ft8-hint { color: #64748b; font-size: 12px; }
+  .ft8-countdown { color: var(--cyan); font-size: 12px; font-weight: 800; font-family: monospace; }
   .ft8-error { color: #ff948c; }
   .ft8-empty { display: grid; place-items: center; min-height: 160px; color: #475569; font-size: 40px; }
   .ft8-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
