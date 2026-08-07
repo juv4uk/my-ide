@@ -50,7 +50,9 @@ The FT8 tab decodes FT8 signals from the device microphone using [ft8js](https:/
 
 Start listening to capture 15-second windows, resample them to 12,000 Hz mono, and decode them. Each decoded message shows signal strength (dB), frequency offset from the tuned tone (Hz), and the message text, newest first. A copy button extracts the likely callsign from a message onto the clipboard.
 
-Known gaps: capture is not yet aligned to UTC 15-second slot boundaries, so cadence is approximate rather than synchronized to the second. There is no transmit (encode/playback) screen yet, and no one-tap action to turn a decoded message into a logged QSO — both the codec and the UI are ready for that, but the workflow is not wired up. Android requires the device to grant microphone access to the app's WebView; this has not yet been validated on real hardware.
+Capture windows are aligned to UTC 15-second slot boundaries (…00, …15, …30, …45) using a self-correcting timer, not a raw sample count, so cadence does not drift over a listening session. This only fixes buffer alignment — the app has no way to verify the device's system clock is itself within the roughly ±1 s of true UTC that FT8 needs; keep automatic clock sync enabled in the OS. Microphone capture and decode have been confirmed working end to end in the packaged Tauri desktop app with a real audio input device.
+
+Known gaps: there is no transmit (encode/playback) screen yet, and no one-tap action to turn a decoded message into a logged QSO — both the codec and the UI are ready for that, but the workflow is not wired up. Android requires the device to grant microphone access to the app's WebView; this has not yet been validated on real hardware. iOS microphone permission (`NSMicrophoneUsageDescription`) is not yet configured, since the platform's generated project is not committed to the repository yet.
 
 ### Station profile — available
 
@@ -73,7 +75,7 @@ Releases provide Windows, Linux, macOS, Android, iOS Simulator, ARM64 Linux/Rasp
 - Notes are a single document rather than per-QSO notes.
 - The iOS artifact is for Simulator, not a signed App Store/device build.
 - macOS packages are CI-built but are not described as notarized production distributions.
-- FT8 capture is not UTC-slot-aligned yet, and there is no transmit or auto-log workflow.
+- FT8 has no transmit or auto-log-to-QSO workflow yet, and mobile microphone permission handling is unvalidated.
 
 ## Українська
 
@@ -113,7 +115,9 @@ QSO впорядковано від нових до старих. Пошук п�
 
 Кнопка запускає прослуховування 15-секундних вікон, ресемплінг до 12000 Гц моно та декодування. Кожне повідомлення показує силу сигналу (дБ), зсув частоти від налаштованого тону (Гц) і текст, найновіші — згори. Кнопка копіювання виділяє ймовірний позивний із повідомлення в буфер обміну.
 
-Відомі обмеження: захоплення ще не прив'язане до меж 15-секундних UTC-слотів, тому темп орієнтовний, а не синхронізований посекундно. Екрана передачі (кодування й відтворення) ще немає, як і кнопки "в один дотик" для перетворення декодованого повідомлення на записане QSO — кодек і UI до цього готові, але робочий процес ще не з'єднано. На Android застосунку потрібно, щоб WebView отримав дозвіл на мікрофон — це ще не перевірено на реальному пристрої.
+Вікна захоплення вирівняно по межах 15-секундних UTC-слотів (…00, …15, …30, …45) через самокорекційний таймер, а не лічильник семплів, тож темп не дрейфує протягом сесії прослуховування. Це виправляє лише вирівнювання буфера — застосунок не має способу перевірити, чи системний годинник пристрою сам перебуває в межах приблизно ±1с від справжнього UTC, що потрібно FT8; тримайте автоматичну синхронізацію часу увімкненою в ОС. Захоплення мікрофона й декодування підтверджено робочими наскрізь у зібраному desktop-застосунку Tauri з реальним аудіо-входом.
+
+Відомі обмеження: екрана передачі (кодування й відтворення) ще немає, як і кнопки "в один дотик" для перетворення декодованого повідомлення на записане QSO — кодек і UI до цього готові, але робочий процес ще не з'єднано. На Android застосунку потрібно, щоб WebView отримав дозвіл на мікрофон — це ще не перевірено на реальному пристрої. Дозвіл мікрофона для iOS (`NSMicrophoneUsageDescription`) ще не налаштовано, бо згенерований проєкт платформи ще не закомічено в репозиторій.
 
 ### Профіль станції — доступно
 
@@ -135,7 +139,7 @@ QSO впорядковано від нових до старих. Пошук п�
 - Повторний імпорт того самого ADIF може створити дублікати.
 - Нотатки поки є одним документом, а не окремими для кожного QSO.
 - iOS-пакет призначено для Simulator; macOS-збірка не заявлена як нотаризована production-версія.
-- Захоплення FT8 ще не прив'язане до UTC-слотів; передачі й автозапису в журнал ще немає.
+- У FT8 ще немає передачі й автозапису в журнал; дозволи мікрофона на мобільних не перевірено.
 
 ## Deutsch
 
@@ -163,7 +167,9 @@ Der FT8-Tab dekodiert FT8-Signale vom Gerätemikrofon mit [ft8js](https://github
 
 Der Start-Knopf erfasst 15-Sekunden-Fenster, resampelt sie auf 12.000 Hz mono und dekodiert sie. Jede dekodierte Nachricht zeigt Signalstärke (dB), Frequenzversatz zum abgestimmten Ton (Hz) und den Nachrichtentext, neueste zuerst. Ein Kopier-Knopf extrahiert das wahrscheinliche Rufzeichen in die Zwischenablage.
 
-Bekannte Lücken: Die Erfassung ist noch nicht an UTC-15-Sekunden-Slotgrenzen ausgerichtet, das Timing ist also ungefähr. Es gibt noch keinen Sende-Bildschirm (Kodierung/Wiedergabe) und keine Ein-Tipp-Aktion, um eine dekodierte Nachricht als QSO zu protokollieren — Codec und UI sind dafür vorbereitet, der Workflow ist aber noch nicht verdrahtet. Android muss dem WebView der App noch Mikrofonzugriff gewähren; das wurde auf echter Hardware noch nicht geprüft.
+Erfassungsfenster sind an UTC-15-Sekunden-Slotgrenzen (…00, …15, …30, …45) ausgerichtet, über einen selbstkorrigierenden Timer statt einer reinen Samplezahl, sodass das Timing über eine Sitzung nicht abdriftet. Das korrigiert nur die Pufferausrichtung — die App kann nicht prüfen, ob die Systemuhr selbst innerhalb der von FT8 benötigten ca. ±1 s zur echten UTC liegt; automatische Zeitsynchronisierung im Betriebssystem aktiviert lassen. Mikrofonerfassung und Dekodierung wurden Ende-zu-Ende in der gepackten Tauri-Desktop-App mit echtem Audioeingabegerät bestätigt.
+
+Bekannte Lücken: Es gibt noch keinen Sende-Bildschirm (Kodierung/Wiedergabe) und keine Ein-Tipp-Aktion, um eine dekodierte Nachricht als QSO zu protokollieren — Codec und UI sind dafür vorbereitet, der Workflow ist aber noch nicht verdrahtet. Android muss dem WebView der App noch Mikrofonzugriff gewähren; das wurde auf echter Hardware noch nicht geprüft. Die iOS-Mikrofonberechtigung (`NSMicrophoneUsageDescription`) ist noch nicht konfiguriert, da das generierte Plattformprojekt noch nicht im Repository committet ist.
 
 ### Stationsprofil — verfügbar
 
@@ -181,5 +187,5 @@ Pakete existieren für Windows, Linux, macOS, Android, iOS Simulator, ARM64 Linu
 
 ### Grenzen
 
-Keine Cloud-Synchronisierung oder automatische Sicherung; erneuter ADIF-Import kann Duplikate erzeugen; Notizen sind ein gemeinsames Dokument; iOS ist Simulator-only; macOS wird nicht als notarisiertes Produktionspaket bezeichnet; FT8-Erfassung ist noch nicht UTC-slot-ausgerichtet, und es gibt noch kein Senden oder Auto-Logging.
+Keine Cloud-Synchronisierung oder automatische Sicherung; erneuter ADIF-Import kann Duplikate erzeugen; Notizen sind ein gemeinsames Dokument; iOS ist Simulator-only; macOS wird nicht als notarisiertes Produktionspaket bezeichnet; FT8 hat noch kein Senden und kein Auto-Logging ins QSO; die Mikrofonberechtigung auf Mobilgeräten ist ungeprüft.
 
