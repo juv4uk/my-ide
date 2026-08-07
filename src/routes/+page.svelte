@@ -8,7 +8,7 @@
   import { BANDS, MODES, defaultRst, emptyQso, normalizeCallsign, utcQsoDate, type Qso, type StationProfile } from '$lib/qso';
   import { DEFAULT_PROFILE, QsoRepository } from '$lib/qso-store';
 
-  type Tab = 'new' | 'log' | 'notes' | 'settings';
+  type Tab = 'new' | 'log' | 'notes' | 'ft8' | 'settings';
   type NoteTemplateKey = 'basicNote' | 'qsoReport' | 'qrppExperiment' | 'powerLadder' | 'contactTable' | 'antennaTable' | 'stationDiagram';
   interface NoteTemplate { key: NoteTemplateKey; icon: string; content: string; mermaid?: boolean; }
 
@@ -461,6 +461,15 @@
             </section>
           </div>
         </section>
+      {:else if activeTab === 'ft8'}
+        <section class="panel ft8-tab-panel">
+          <div class="section-heading"><div><span class="eyebrow">WASM</span><h1>{t('ft8')}</h1></div></div>
+          {#await import('$lib/ft8/Ft8Panel.svelte')}
+            <div class="preview-empty">◇</div>
+          {:then module}
+            <module.default {t} />
+          {/await}
+        </section>
       {:else}
         <section class="panel settings-panel">
           <div class="section-heading"><div><span class="eyebrow">ADIF</span><h1>{t('stationProfile')}</h1></div></div>
@@ -490,6 +499,7 @@
       <button class:active={activeTab === 'new'} onclick={() => activeTab = 'new'}><span>＋</span>{t('newQso')}</button>
       <button class:active={activeTab === 'log'} onclick={() => activeTab = 'log'}><span>☷</span>{t('logbook')}</button>
       <button class:active={activeTab === 'notes'} onclick={openNotes}><span>◇</span>{t('notes')}</button>
+      <button class:active={activeTab === 'ft8'} onclick={() => activeTab = 'ft8'}><span>◈</span>{t('ft8')}</button>
       <button class:active={activeTab === 'settings'} onclick={() => activeTab = 'settings'}><span>⚙</span>{t('settings')}</button>
     </nav>
     {#if toast}<div class="toast" role="status">{toast}</div>{/if}

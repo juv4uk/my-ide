@@ -19,7 +19,10 @@ const messages = {
     diagramError: 'The Mermaid diagram could not be rendered', templates: 'Learning templates',
     templatesHint: 'Insert an example, compare its source with the preview, then adapt it.',
     basicNote: 'Basic note', qsoReport: 'QSO report', qrppExperiment: 'QRPp experiment', powerLadder: 'Power ladder', contactTable: 'Contact table', antennaTable: 'Antenna table',
-    stationDiagram: 'Station diagram', templateAdded: 'Template inserted'
+    stationDiagram: 'Station diagram', templateAdded: 'Template inserted',
+    ft8: 'FT8', ft8Start: 'Start listening', ft8Stop: 'Stop listening',
+    ft8Hint: 'Decodes locally from the microphone; nothing leaves this device.',
+    ft8Empty: 'No messages decoded yet', ft8CopyCall: 'Copy callsign'
   },
   uk: {
     appName: 'Signal & Radio Log', newQso: 'Нове QSO', logbook: 'Журнал', notes: 'Нотатки', settings: 'Станція',
@@ -40,7 +43,10 @@ const messages = {
     diagramError: 'Не вдалося побудувати Mermaid-схему', templates: 'Навчальні шаблони',
     templatesHint: 'Вставте приклад, порівняйте код із переглядом, а потім змінюйте його під себе.',
     basicNote: 'Проста нотатка', qsoReport: 'Звіт QSO', qrppExperiment: 'QRPp-експеримент', powerLadder: 'Сходинки потужності', contactTable: 'Таблиця зв’язків', antennaTable: 'Таблиця антен',
-    stationDiagram: 'Схема станції', templateAdded: 'Шаблон вставлено'
+    stationDiagram: 'Схема станції', templateAdded: 'Шаблон вставлено',
+    ft8: 'FT8', ft8Start: 'Почати прослуховування', ft8Stop: 'Зупинити прослуховування',
+    ft8Hint: 'Декодується локально з мікрофона; нічого не залишає цей пристрій.',
+    ft8Empty: 'Ще немає декодованих повідомлень', ft8CopyCall: 'Скопіювати позивний'
   },
   de: {
     appName: 'Signal & Radio Log', newQso: 'Neues QSO', logbook: 'Logbuch', notes: 'Notizen', settings: 'Station',
@@ -62,7 +68,10 @@ const messages = {
     autosaved: 'Wird automatisch gespeichert', diagramError: 'Das Mermaid-Diagramm konnte nicht dargestellt werden',
     templates: 'Lernvorlagen', templatesHint: 'Beispiel einfügen, Quelltext und Vorschau vergleichen und anschließend anpassen.',
     basicNote: 'Einfache Notiz', qsoReport: 'QSO-Bericht', qrppExperiment: 'QRPp-Experiment', powerLadder: 'Leistungsleiter', contactTable: 'Kontakt-Tabelle', antennaTable: 'Antennen-Tabelle',
-    stationDiagram: 'Stationsdiagramm', templateAdded: 'Vorlage eingefügt'
+    stationDiagram: 'Stationsdiagramm', templateAdded: 'Vorlage eingefügt',
+    ft8: 'FT8', ft8Start: 'Empfang starten', ft8Stop: 'Empfang stoppen',
+    ft8Hint: 'Wird lokal vom Mikrofon dekodiert; nichts verlässt dieses Gerät.',
+    ft8Empty: 'Noch keine Nachrichten dekodiert', ft8CopyCall: 'Rufzeichen kopieren'
   }
 } as const;
 
