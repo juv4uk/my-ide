@@ -124,29 +124,30 @@
     draft.txPower = power;
   }
 
-  // EN: Pre-fills the New QSO form from a decoded FT8 exchange and switches
-  // to it for review — never saves directly. The FT8 message parser only
-  // sees local audio and can misjudge an exchange (weak signal, adjacent
-  // decode bleeding through), so the operator always confirms before it
-  // reaches the log, same as every other entry path in this screen.
-  // UK: Заповнює форму нового QSO з декодованого FT8-обміну й перемикає на
-  // неї для перегляду — ніколи не зберігає напряму. Парсер FT8-повідомлень
-  // бачить лише локальне аудіо і може помилитися (слабкий сигнал, витік
-  // сусіднього декоду), тож оператор завжди підтверджує перед записом.
-  // DE: Füllt das Neues-QSO-Formular aus einem dekodierten FT8-Austausch
-  // vor und wechselt zur Überprüfung dorthin — speichert nie direkt.
+  // EN: Saves a decoded FT8 exchange straight to the log — one click, no
+  // intermediate form. The operator can still fix a bad entry afterward
+  // from the Logbook tab (Edit/Delete), the same way any other saved QSO
+  // is corrected; this trades "confirm before it's saved" for "confirm by
+  // reviewing what's already saved," at the operator's request.
+  // UK: Зберігає декодований FT8-обмін одразу в журнал — один клік, без
+  // проміжної форми. Помилковий запис можна виправити потім із вкладки
+  // Журнал (Змінити/Видалити), так само як і будь-яке інше збережене QSO.
+  // DE: Speichert einen dekodierten FT8-Austausch direkt ins Logbuch — ein
+  // Klick, kein Zwischenformular. Ein falscher Eintrag lässt sich danach
+  // im Logbuch-Tab korrigieren (Bearbeiten/Löschen).
   function logFt8Qso(request: { call: string; grid?: string; rstSent?: string; rstRcvd?: string; capturedAt: string }): void {
     const capturedAt = new Date(request.capturedAt);
-    editing = false;
-    draft = emptyQso(profile, capturedAt);
-    draft.call = normalizeCallsign(request.call);
-    draft.mode = 'FT8';
-    draft.rstSent = request.rstSent ?? defaultRst('FT8');
-    draft.rstRcvd = defaultRst('FT8');
-    draft.qsoDate = utcQsoDate(capturedAt);
-    draft.timeOn = utcQsoTime(capturedAt);
-    if (request.grid) draft.gridSquare = request.grid;
-    activeTab = 'new';
+    const qso = emptyQso(profile, capturedAt);
+    qso.call = normalizeCallsign(request.call);
+    qso.mode = 'FT8';
+    qso.rstSent = request.rstSent ?? defaultRst('FT8');
+    qso.rstRcvd = defaultRst('FT8');
+    qso.qsoDate = utcQsoDate(capturedAt);
+    qso.timeOn = utcQsoTime(capturedAt);
+    if (request.grid) qso.gridSquare = request.grid;
+    repository.save(qso);
+    records = repository.list();
+    flash(`${qso.call} ${t('saved')}`);
   }
 
   /** EN/UK/DE: A visual category only; ADIF always keeps the operator's exact TX_PWR value. */
