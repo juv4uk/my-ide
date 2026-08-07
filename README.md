@@ -103,14 +103,7 @@ Get the latest build from **[Releases](https://github.com/juv4uk/my-ide/releases
 
 Signal & Radio Log is a serious open-source project, but it is still maintained by one creator—not a company or a large team. It has reached the point where thoughtful review and mentorship can make a real difference.
 
-The Apple builds especially need someone willing to take them under their wing. GitHub Actions currently produces a universal macOS package and an iOS Simulator app, but proper distribution still needs:
-
-- macOS code signing and notarization;
-- iOS provisioning and builds for real devices;
-- testing on actual Macs, iPhones, and iPads;
-- patient review of the Tauri/Swift/Xcode release process.
-
-Help with Rust, Svelte, accessibility, security, radio workflows, documentation, and release engineering is equally welcome. You do not have to take over the project. Reviewing one workflow, explaining one Apple requirement, or mentoring one architectural decision is already valuable.
+Help with Rust, Svelte, accessibility, security, radio workflows, documentation, and release engineering is welcome. You do not have to take over the project. Reviewing one workflow or mentoring one architectural decision is already valuable.
 
 If you are an experienced developer, radio amateur, teacher, or maintainer and this small independent project speaks to you, please **[open an Issue and say hello](https://github.com/juv4uk/my-ide/issues/new)**. We would be glad to build it with you.
 
@@ -148,14 +141,7 @@ If you are an experienced developer, radio amateur, teacher, or maintainer and t
 
 Signal & Radio Log — уже серйозний open-source проєкт, але його розвиває одна людина, а не компанія чи велика команда. Ми дійшли до моменту, коли уважний review і добре наставництво можуть справді змінити майбутнє проєкту.
 
-Особливо потрібна людина, готова взяти під опіку Apple-напрям. GitHub Actions уже створює універсальну збірку macOS та застосунок для iOS Simulator, але для нормального розповсюдження ще потрібні:
-
-- підпис коду й notarization для macOS;
-- provisioning і збірки iOS для реальних пристроїв;
-- перевірка на справжніх Mac, iPhone та iPad;
-- терплячий review процесу релізу Tauri/Swift/Xcode.
-
-Так само цінною буде допомога з Rust, Svelte, доступністю, безпекою, радіоаматорськими сценаріями, документацією та release engineering. Не обов’язково брати на себе весь проєкт. Перевірити один workflow, пояснити одну вимогу Apple або допомогти з одним архітектурним рішенням — це вже багато.
+Цінною буде допомога з Rust, Svelte, доступністю, безпекою, радіоаматорськими сценаріями, документацією та release engineering. Не обов’язково брати на себе весь проєкт. Перевірити один workflow або допомогти з одним архітектурним рішенням — це вже багато.
 
 Якщо ви досвідчений розробник, радіоаматор, викладач або мейнтейнер і вам близький цей маленький незалежний проєкт — **[відкрийте Issue й просто привітайтеся](https://github.com/juv4uk/my-ide/issues/new)**. Ми будемо раді будувати його разом.
 
@@ -193,14 +179,7 @@ Die aktuelle Version steht unter **[Releases](https://github.com/juv4uk/my-ide/r
 
 Signal & Radio Log ist bereits ein ernsthaftes Open-Source-Projekt, wird aber von einer einzelnen Person entwickelt und nicht von einem Unternehmen oder einem großen Team. Es ist an einem Punkt angekommen, an dem sorgfältiges Review und gute Begleitung wirklich etwas bewirken können.
 
-Besonders gesucht wird jemand, der den Apple-Bereich unter seine Fittiche nimmt. GitHub Actions erstellt bereits ein universelles macOS-Paket und eine App für den iOS Simulator. Für eine reguläre Veröffentlichung fehlen jedoch noch:
-
-- Code-Signierung und Notarisierung für macOS;
-- iOS-Provisioning und Builds für echte Geräte;
-- Tests auf realen Macs, iPhones und iPads;
-- geduldiges Review des Tauri/Swift/Xcode-Release-Prozesses.
-
-Auch Hilfe bei Rust, Svelte, Barrierefreiheit, Sicherheit, Amateurfunk-Abläufen, Dokumentation und Release Engineering ist sehr willkommen. Niemand muss gleich das ganze Projekt übernehmen. Ein Workflow-Review, die Erklärung einer Apple-Anforderung oder Begleitung bei einer Architekturentscheidung ist bereits wertvoll.
+Hilfe bei Rust, Svelte, Barrierefreiheit, Sicherheit, Amateurfunk-Abläufen, Dokumentation und Release Engineering ist willkommen. Niemand muss gleich das ganze Projekt übernehmen. Ein Workflow-Review oder Begleitung bei einer Architekturentscheidung ist bereits wertvoll.
 
 Wenn Sie erfahrener Entwickler, Funkamateur, Lehrer oder Maintainer sind und dieses kleine unabhängige Projekt Sie anspricht, **[öffnen Sie bitte ein Issue und sagen Sie einfach Hallo](https://github.com/juv4uk/my-ide/issues/new)**. Wir würden uns freuen, es gemeinsam mit Ihnen weiterzuentwickeln.
 
