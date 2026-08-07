@@ -44,6 +44,14 @@ Beginner templates are localized and inserted at the cursor:
 
 The current renderer displays the first fenced `mermaid` block and ordinary Markdown around it. A second Mermaid template is disabled while a Mermaid block already exists.
 
+### FT8 decode — available
+
+The FT8 tab decodes FT8 signals from the device microphone using [ft8js](https://github.com/e04/ft8js) (a WebAssembly build of `ft8_lib`, MIT). No WSJT-X, other companion program, or network connection is required; decoding runs entirely on-device.
+
+Start listening to capture 15-second windows, resample them to 12,000 Hz mono, and decode them. Each decoded message shows signal strength (dB), frequency offset from the tuned tone (Hz), and the message text, newest first. A copy button extracts the likely callsign from a message onto the clipboard.
+
+Known gaps: capture is not yet aligned to UTC 15-second slot boundaries, so cadence is approximate rather than synchronized to the second. There is no transmit (encode/playback) screen yet, and no one-tap action to turn a decoded message into a logged QSO — both the codec and the UI are ready for that, but the workflow is not wired up. Android requires the device to grant microphone access to the app's WebView; this has not yet been validated on real hardware.
+
 ### Station profile — available
 
 The profile stores station callsign, operator, own grid square, default band, default mode, default power, and language. Defaults are copied into each new QSO. A legacy 100 W default is automatically migrated to the QRPp-first value of 0.5 W.
@@ -65,6 +73,7 @@ Releases provide Windows, Linux, macOS, Android, iOS Simulator, ARM64 Linux/Rasp
 - Notes are a single document rather than per-QSO notes.
 - The iOS artifact is for Simulator, not a signed App Store/device build.
 - macOS packages are CI-built but are not described as notarized production distributions.
+- FT8 capture is not UTC-slot-aligned yet, and there is no transmit or auto-log workflow.
 
 ## Українська
 
@@ -98,6 +107,14 @@ QSO впорядковано від нових до старих. Пошук п�
 
 Доступні локалізовані навчальні шаблони: базова нотатка, звіт QSO, QRPp-експеримент, сходинки потужності, таблиця контактів, порівняння антен і Mermaid-схема станції. Нині відображається перший блок `mermaid`; додавання другого шаблону схеми блокується.
 
+### Декодування FT8 — доступно
+
+Вкладка FT8 декодує сигнали FT8 з мікрофона пристрою за допомогою [ft8js](https://github.com/e04/ft8js) (WebAssembly-збірка `ft8_lib`, MIT). WSJT-X, інша супутня програма чи мережа не потрібні — декодування відбувається повністю на пристрої.
+
+Кнопка запускає прослуховування 15-секундних вікон, ресемплінг до 12000 Гц моно та декодування. Кожне повідомлення показує силу сигналу (дБ), зсув частоти від налаштованого тону (Гц) і текст, найновіші — згори. Кнопка копіювання виділяє ймовірний позивний із повідомлення в буфер обміну.
+
+Відомі обмеження: захоплення ще не прив'язане до меж 15-секундних UTC-слотів, тому темп орієнтовний, а не синхронізований посекундно. Екрана передачі (кодування й відтворення) ще немає, як і кнопки "в один дотик" для перетворення декодованого повідомлення на записане QSO — кодек і UI до цього готові, але робочий процес ще не з'єднано. На Android застосунку потрібно, щоб WebView отримав дозвіл на мікрофон — це ще не перевірено на реальному пристрої.
+
 ### Профіль станції — доступно
 
 Зберігає позивний станції, оператора, власний локатор, типовий діапазон, режим, потужність і мову. Ці значення копіюються в нове QSO. Старе типове значення 100 Вт автоматично мігрує на 0.5 Вт.
@@ -118,6 +135,7 @@ QSO впорядковано від нових до старих. Пошук п�
 - Повторний імпорт того самого ADIF може створити дублікати.
 - Нотатки поки є одним документом, а не окремими для кожного QSO.
 - iOS-пакет призначено для Simulator; macOS-збірка не заявлена як нотаризована production-версія.
+- Захоплення FT8 ще не прив'язане до UTC-слотів; передачі й автозапису в журнал ще немає.
 
 ## Deutsch
 
@@ -139,6 +157,14 @@ Kontakte sind absteigend nach Datum/Zeit sortiert. Die Suche umfasst Rufzeichen,
 
 Ein automatisch gespeichertes Markdown-Dokument besitzt eine Live-Vorschau. Vorlagen erklären Grundnotizen, QSO-Bericht, QRPp-Experiment, Leistungsleiter, Kontakt- und Antennentabellen sowie einen Mermaid-Signalweg. HTML und SVG werden bereinigt. Derzeit wird der erste Mermaid-Block dargestellt.
 
+### FT8-Dekodierung — verfügbar
+
+Der FT8-Tab dekodiert FT8-Signale vom Gerätemikrofon mit [ft8js](https://github.com/e04/ft8js) (ein WebAssembly-Build von `ft8_lib`, MIT). WSJT-X, ein anderes Begleitprogramm oder eine Netzwerkverbindung sind nicht nötig — die Dekodierung läuft vollständig auf dem Gerät.
+
+Der Start-Knopf erfasst 15-Sekunden-Fenster, resampelt sie auf 12.000 Hz mono und dekodiert sie. Jede dekodierte Nachricht zeigt Signalstärke (dB), Frequenzversatz zum abgestimmten Ton (Hz) und den Nachrichtentext, neueste zuerst. Ein Kopier-Knopf extrahiert das wahrscheinliche Rufzeichen in die Zwischenablage.
+
+Bekannte Lücken: Die Erfassung ist noch nicht an UTC-15-Sekunden-Slotgrenzen ausgerichtet, das Timing ist also ungefähr. Es gibt noch keinen Sende-Bildschirm (Kodierung/Wiedergabe) und keine Ein-Tipp-Aktion, um eine dekodierte Nachricht als QSO zu protokollieren — Codec und UI sind dafür vorbereitet, der Workflow ist aber noch nicht verdrahtet. Android muss dem WebView der App noch Mikrofonzugriff gewähren; das wurde auf echter Hardware noch nicht geprüft.
+
 ### Stationsprofil — verfügbar
 
 Gespeichert werden Stationsrufzeichen, Operator, eigener Locator, Standardband, Standardbetriebsart, Standardleistung und Sprache. Ein alter 100-W-Standard wird automatisch auf 0,5 W migriert.
@@ -155,5 +181,5 @@ Pakete existieren für Windows, Linux, macOS, Android, iOS Simulator, ARM64 Linu
 
 ### Grenzen
 
-Keine Cloud-Synchronisierung oder automatische Sicherung; erneuter ADIF-Import kann Duplikate erzeugen; Notizen sind ein gemeinsames Dokument; iOS ist Simulator-only; macOS wird nicht als notarisiertes Produktionspaket bezeichnet.
+Keine Cloud-Synchronisierung oder automatische Sicherung; erneuter ADIF-Import kann Duplikate erzeugen; Notizen sind ein gemeinsames Dokument; iOS ist Simulator-only; macOS wird nicht als notarisiertes Produktionspaket bezeichnet; FT8-Erfassung ist noch nicht UTC-slot-ausgerichtet, und es gibt noch kein Senden oder Auto-Logging.
 

@@ -51,6 +51,10 @@ An invite is 12 unambiguous characters (`2-9`, selected uppercase letters) group
 
 The relay adapter joins a public room and forwards encrypted envelopes. This protects content from an honest-but-curious relay but does not provide identity verification, forward secrecy, metadata concealment, abuse prevention, server authentication beyond TLS, or a production service. Treat it as a tested protocol foundation.
 
+### FT8 decoding
+
+Microphone audio is captured and decoded entirely in-process (WebAssembly), with no network request and no file written to disk; raw audio and intermediate buffers exist only in memory for the duration of a 15-second decode cycle. Only the resulting text messages are kept, and only in the tab's in-memory list — nothing is persisted to `localStorage` yet. Android requires the OS-level `RECORD_AUDIO` permission (declared in the manifest) and a WebView grant for `getUserMedia`; iOS will need an `NSMicrophoneUsageDescription` entry once its generated project is committed.
+
 ### Tauri permissions
 
 The main window has default core/opener/dialog/filesystem permissions plus open/save dialogs and text-file read/write. Radio Rules are exposed through one explicit command. `csp` is currently `null`; before loading remote content or adding a chat UI, a restrictive Content Security Policy should be designed and tested.
@@ -69,6 +73,8 @@ Radio Rules бачить лише шість дозволених значень
 
 QSO Connect використовує 12-символьне запрошення, SHA-256 room ID, PBKDF2-SHA-256 (210 000 ітерацій) і AES-256-GCM із випадковим 12-байтовим IV. Relay бачить room ID і ciphertext, але ця основа ще не забезпечує перевірку особи, forward secrecy, приховування метаданих або production-службу.
 
+FT8: аудіо з мікрофона декодується повністю в процесі (WebAssembly), без мережевих запитів і без запису на диск; сирий звук існує лише в пам'яті на час 15-секундного циклу декодування. Зберігаються лише текстові результати, і поки що тільки в пам'яті вкладки — не в `localStorage`. Android потребує дозволу `RECORD_AUDIO` (є в маніфесті) і надання WebView доступу до `getUserMedia`; iOS потребуватиме `NSMicrophoneUsageDescription`, коли з'явиться закомічений згенерований проєкт.
+
 Tauri дозволяє основному вікну діалоги та читання/запис текстових файлів. CSP зараз `null`; перед віддаленим контентом її слід обмежити.
 
 ## Deutsch
@@ -82,6 +88,8 @@ Der ADIF-3.1.7-Parser zählt Unicode-Zeichen längengerecht, toleriert ein fehle
 Markdown-HTML wird escaped und bereinigt; Mermaid läuft strikt und SVG wird erneut sanitisiert. Radio Rules besitzt ausschließlich freigegebene QSO-Felder/Aktionen und feste Ressourcenlimits.
 
 QSO Connect verwendet 12 eindeutige Zeichen, SHA-256 für die Raum-ID, PBKDF2-SHA-256 mit 210.000 Iterationen und AES-256-GCM mit zufälligem 12-Byte-IV. Es ist eine getestete Grundlage, noch ohne Identitätsprüfung, Forward Secrecy, Metadatenverbergung oder Produktionsdienst.
+
+FT8: Mikrofonaudio wird vollständig im Prozess dekodiert (WebAssembly), ohne Netzwerkaufruf und ohne Datei auf der Festplatte; Rohaudio existiert nur im Speicher während eines 15-Sekunden-Zyklus. Nur die Textergebnisse bleiben erhalten, und das bisher nur im Speicher des Tabs, nicht in `localStorage`. Android benötigt `RECORD_AUDIO` (im Manifest deklariert) und eine WebView-Freigabe für `getUserMedia`; iOS wird `NSMicrophoneUsageDescription` benötigen, sobald das generierte Projekt committet ist.
 
 Tauri erlaubt Dialoge und Textdatei-Lese-/Schreibzugriff. Die CSP ist derzeit `null` und muss vor Remote-Inhalten restriktiv gestaltet werden.
 

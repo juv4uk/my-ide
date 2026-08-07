@@ -30,6 +30,7 @@ keystore_base64.txt
 # IDE settings
 .vscode/
 .idea/
+.claude/
 
 # Local release-script backup / Локальна резервна копія / Lokale Sicherung
 scripts/release1.ps1

@@ -20,6 +20,8 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 Vite uses strict port 1420 and HMR port 1421 for remote Tauri development. File watching ignores `src-tauri` to avoid frontend rebuild noise during Rust compilation.
 
+After bumping the `ft8js` dependency, regenerate the embedded WASM payload: `node scripts/generate-ft8-wasm-assets.mjs`. This overwrites `src/lib/ft8/wasm-assets.ts`, which should be committed alongside the dependency bump.
+
 ### Tests
 
 Current Node tests cover declared-length ADIF parsing, unknown fields, Unicode round-trip, malformed lengths, invite normalization, stable room IDs, encryption/decryption separation, wrong-invite rejection, and watts-to-milliwatts conversion. Rust unit tests cover matching/non-matching Radio Rules, capability rejection, source locations, and action deduplication.
@@ -73,6 +75,8 @@ Three desktop matrix builds create the GitHub Release first. ARM Linux, Flatpak,
 
 CI створює MSI/EXE, DEB/RPM/AppImage, Flatpak, universal DMG, підписані Android APK/AAB, iOS Simulator ZIP, ARM64 Linux і один `signal-radio-log-web.html`. Android вимагає чотири GitHub Secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`, `ANDROID_KEY_ALIAS`.
 
+Після оновлення залежності `ft8js` перегенеруйте вбудований WASM: `node scripts/generate-ft8-wasm-assets.mjs`, і закомітьте оновлений `src/lib/ft8/wasm-assets.ts` разом зі зміною залежності.
+
 Реліз запускається з чистої `main` командою `.\scripts\release.ps1 X.Y.Z`. Скрипт оновлює п’ять версійних файлів, виконує Rust/frontend перевірки, створює тримовний коміт, анотований тег і атомарно відправляє їх. Перед цим треба додати `.github/release-notes/vX.Y.Z.md` та окремо закомітити всі звичайні зміни.
 
 Правила внесків: не втрачати невідомі ADIF-поля, берегти офлайн-роботу, перекладати UI трьома мовами, тестувати палець/орієнтації, відрізняти основу від готової функції й не комітити секрети, пакети чи build-каталоги.
@@ -82,6 +86,8 @@ CI створює MSI/EXE, DEB/RPM/AppImage, Flatpak, universal DMG, підпи�
 Frontend benötigt Node.js/npm; native Builds benötigen stabiles Rust, Tauri v2 und Plattformabhängigkeiten. Wichtige Befehle: `npm run dev`, `npm run tauri dev`, `npm test`, `npm run check`, `npm run build`, `cargo test --manifest-path src-tauri/Cargo.toml`.
 
 CI erzeugt MSI/EXE, DEB/RPM/AppImage, Flatpak, universelles DMG, signierte Android-APK/AAB, iOS-Simulator-ZIP, ARM64-Linux und eine `signal-radio-log-web.html`. Android benötigt die vier aufgeführten GitHub Secrets.
+
+Nach einem Update der `ft8js`-Abhängigkeit die eingebettete WASM-Nutzlast neu erzeugen: `node scripts/generate-ft8-wasm-assets.mjs`, und das aktualisierte `src/lib/ft8/wasm-assets.ts` zusammen mit dem Dependency-Bump committen.
 
 Ein Release startet auf sauberem `main` mit `.\scripts\release.ps1 X.Y.Z`. Das Skript aktualisiert fünf Versionsdateien, führt Rust-/Frontend-Prüfungen aus, erstellt dreisprachigen Commit und annotierten Tag und pusht beides atomar. Zuvor gehören kuratierte Hinweise nach `.github/release-notes/vX.Y.Z.md`.
 
