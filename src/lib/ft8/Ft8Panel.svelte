@@ -1,8 +1,11 @@
 <script lang="ts">
   import { decodeFt8, FT8_SAMPLE_RATE, FT8_CYCLE_SECONDS, type Ft8ReceivedMessage } from './codec';
+  import { parseFt8Message, impliesCompletedExchange, otherStationCall } from './message';
   import type { MessageKey } from '../i18n';
 
-  let { t }: { t: (key: MessageKey) => string } = $props();
+  type QsoLogRequest = { call: string; grid?: string; rstSent?: string; rstRcvd?: string; capturedAt: string };
+
+  let { t, myCall = '', onLogQso }: { t: (key: MessageKey) => string; myCall?: string; onLogQso?: (request: QsoLogRequest) => void } = $props();
 
   type LogEntry = Ft8ReceivedMessage & { id: string; capturedAt: string };
 
@@ -149,6 +152,18 @@
     const call = text.split(' ').find((token, index) => index > 0 && /^[A-Z0-9/]{3,}$/.test(token));
     if (call) void navigator.clipboard?.writeText(call);
   }
+
+  function logEntry(entry: LogEntry) {
+    const message = parseFt8Message(entry.text);
+    if (!impliesCompletedExchange(message) || !onLogQso) return;
+    const call = otherStationCall(message, myCall);
+    onLogQso({
+      call,
+      grid: message.type === 'GRID' ? message.grid : undefined,
+      rstSent: message.type === 'REPORT' ? message.report : undefined,
+      capturedAt: entry.capturedAt
+    });
+  }
 </script>
 
 <section class="ft8-panel">
@@ -170,10 +185,15 @@
   {:else}
     <ul class="ft8-list">
       {#each entries as entry (entry.id)}
+        {@const message = parseFt8Message(entry.text)}
         <li class="ft8-entry">
           <span class="ft8-db">{entry.db > 0 ? '+' : ''}{entry.db.toFixed(0)} dB</span>
           <span class="ft8-df">{entry.df.toFixed(0)} Hz</span>
+          <span class="ft8-type" class:ft8-type--exchange={impliesCompletedExchange(message)}>{message.type}</span>
           <span class="ft8-text">{entry.text}</span>
+          {#if impliesCompletedExchange(message) && onLogQso}
+            <button class="ft8-log" onclick={() => logEntry(entry)} title={t('ft8LogQso')}>{t('ft8LogQso')}</button>
+          {/if}
           <button class="ft8-copy" onclick={() => copyCallsign(entry.text)} title={t('ft8CopyCall')}>⧉</button>
         </li>
       {/each}
@@ -194,11 +214,17 @@
   .ft8-empty { display: grid; place-items: center; min-height: 160px; color: #475569; font-size: 40px; }
   .ft8-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .ft8-entry {
-    display: grid; grid-template-columns: 60px 70px 1fr auto; align-items: center; gap: 10px;
+    display: grid; grid-template-columns: 60px 70px 64px 1fr auto auto; align-items: center; gap: 10px;
     padding: 8px 12px; border: 1px solid #47556966; border-radius: 10px; background: #172033e6;
     font-family: monospace; font-size: 13px;
   }
   .ft8-db { color: var(--cyan); }
   .ft8-df { color: #94a3b8; }
+  .ft8-type { color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .ft8-type--exchange { color: var(--cyan); font-weight: 800; }
+  .ft8-log {
+    padding: 4px 10px; border-radius: 8px; border: 1px solid var(--cyan); background: transparent;
+    color: var(--cyan); font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap;
+  }
   .ft8-copy { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; }
 </style>

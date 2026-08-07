@@ -5,7 +5,7 @@
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { exportAdif, parseAdif } from '$lib/adif';
   import { translate, type Language, type MessageKey } from '$lib/i18n';
-  import { BANDS, MODES, defaultRst, emptyQso, normalizeCallsign, utcQsoDate, type Qso, type StationProfile } from '$lib/qso';
+  import { BANDS, MODES, defaultRst, emptyQso, normalizeCallsign, utcQsoDate, utcQsoTime, type Qso, type StationProfile } from '$lib/qso';
   import { DEFAULT_PROFILE, QsoRepository } from '$lib/qso-store';
 
   type Tab = 'new' | 'log' | 'notes' | 'ft8' | 'settings';
@@ -122,6 +122,31 @@
 
   function choosePower(power: string): void {
     draft.txPower = power;
+  }
+
+  // EN: Pre-fills the New QSO form from a decoded FT8 exchange and switches
+  // to it for review — never saves directly. The FT8 message parser only
+  // sees local audio and can misjudge an exchange (weak signal, adjacent
+  // decode bleeding through), so the operator always confirms before it
+  // reaches the log, same as every other entry path in this screen.
+  // UK: Заповнює форму нового QSO з декодованого FT8-обміну й перемикає на
+  // неї для перегляду — ніколи не зберігає напряму. Парсер FT8-повідомлень
+  // бачить лише локальне аудіо і може помилитися (слабкий сигнал, витік
+  // сусіднього декоду), тож оператор завжди підтверджує перед записом.
+  // DE: Füllt das Neues-QSO-Formular aus einem dekodierten FT8-Austausch
+  // vor und wechselt zur Überprüfung dorthin — speichert nie direkt.
+  function logFt8Qso(request: { call: string; grid?: string; rstSent?: string; rstRcvd?: string; capturedAt: string }): void {
+    const capturedAt = new Date(request.capturedAt);
+    editing = false;
+    draft = emptyQso(profile, capturedAt);
+    draft.call = normalizeCallsign(request.call);
+    draft.mode = 'FT8';
+    draft.rstSent = request.rstSent ?? defaultRst('FT8');
+    draft.rstRcvd = defaultRst('FT8');
+    draft.qsoDate = utcQsoDate(capturedAt);
+    draft.timeOn = utcQsoTime(capturedAt);
+    if (request.grid) draft.gridSquare = request.grid;
+    activeTab = 'new';
   }
 
   /** EN/UK/DE: A visual category only; ADIF always keeps the operator's exact TX_PWR value. */
@@ -467,7 +492,7 @@
           {#await import('$lib/ft8/Ft8Panel.svelte')}
             <div class="preview-empty">◇</div>
           {:then module}
-            <module.default {t} />
+            <module.default {t} myCall={profile.callsign} onLogQso={logFt8Qso} />
           {/await}
         </section>
       {:else}

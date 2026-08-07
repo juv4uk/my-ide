@@ -22,7 +22,7 @@ const messages = {
     stationDiagram: 'Station diagram', templateAdded: 'Template inserted',
     ft8: 'FT8', ft8Start: 'Start listening', ft8Stop: 'Stop listening',
     ft8Hint: 'Decodes locally from the microphone; nothing leaves this device.',
-    ft8Empty: 'No messages decoded yet', ft8CopyCall: 'Copy callsign'
+    ft8Empty: 'No messages decoded yet', ft8CopyCall: 'Copy callsign', ft8LogQso: 'Log QSO'
   },
   uk: {
     appName: 'Signal & Radio Log', newQso: 'Нове QSO', logbook: 'Журнал', notes: 'Нотатки', settings: 'Станція',
@@ -46,7 +46,7 @@ const messages = {
     stationDiagram: 'Схема станції', templateAdded: 'Шаблон вставлено',
     ft8: 'FT8', ft8Start: 'Почати прослуховування', ft8Stop: 'Зупинити прослуховування',
     ft8Hint: 'Декодується локально з мікрофона; нічого не залишає цей пристрій.',
-    ft8Empty: 'Ще немає декодованих повідомлень', ft8CopyCall: 'Скопіювати позивний'
+    ft8Empty: 'Ще немає декодованих повідомлень', ft8CopyCall: 'Скопіювати позивний', ft8LogQso: 'Записати QSO'
   },
   de: {
     appName: 'Signal & Radio Log', newQso: 'Neues QSO', logbook: 'Logbuch', notes: 'Notizen', settings: 'Station',
@@ -71,7 +71,7 @@ const messages = {
     stationDiagram: 'Stationsdiagramm', templateAdded: 'Vorlage eingefügt',
     ft8: 'FT8', ft8Start: 'Empfang starten', ft8Stop: 'Empfang stoppen',
     ft8Hint: 'Wird lokal vom Mikrofon dekodiert; nichts verlässt dieses Gerät.',
-    ft8Empty: 'Noch keine Nachrichten dekodiert', ft8CopyCall: 'Rufzeichen kopieren'
+    ft8Empty: 'Noch keine Nachrichten dekodiert', ft8CopyCall: 'Rufzeichen kopieren', ft8LogQso: 'QSO loggen'
   }
 } as const;
 
