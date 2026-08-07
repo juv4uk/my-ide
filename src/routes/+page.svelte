@@ -343,9 +343,17 @@
     return document.body.innerHTML;
   }
 
+  /**
+   * Mermaid renders quoted node labels (`node["Text"]`, used by every note template) as
+   * markdown strings, which only lay out correctly inside a <foreignObject> — with
+   * htmlLabels:false those labels render as empty <text> instead. So <foreignObject>
+   * itself must stay; only its dangerous *contents* are worth stripping. The attribute
+   * loop below already walks into it (DOMParser keeps it in the same document), so
+   * event-handler and javascript:/data: attributes are covered there regardless of nesting.
+   */
   function sanitizeGeneratedSvg(value: string): string {
     const document = new DOMParser().parseFromString(value, 'image/svg+xml');
-    document.querySelectorAll('script, foreignObject').forEach((node) => node.remove());
+    document.querySelectorAll('script, iframe').forEach((node) => node.remove());
     document.querySelectorAll('*').forEach((element) => {
       for (const attribute of [...element.attributes]) {
         if (attribute.name.toLowerCase().startsWith('on') || /^(javascript|data):/i.test(attribute.value.trim())) {
