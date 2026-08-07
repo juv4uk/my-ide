@@ -37,7 +37,7 @@ The parser counts Unicode characters according to declared ADI length, accepts a
 
 ### Markdown and Mermaid security
 
-Raw Markdown HTML is escaped. The sanitizer removes script, iframe, object, embed, style, link, meta, and foreignObject elements; event handler attributes and `javascript:`/`data:` URL attributes are removed. Mermaid runs with `securityLevel: strict`, and generated SVG receives a second sanitizer pass. This is defense in depth, but dependency updates should still be reviewed.
+Raw Markdown HTML is escaped. The Markdown sanitizer removes script, iframe, object, embed, style, link, meta, and foreignObject elements; event handler attributes and `javascript:`/`data:` URL attributes are removed. Mermaid runs with `securityLevel: strict`, and its generated SVG gets a second, separate sanitizer pass that removes only script and iframe elements — `foreignObject` is intentionally kept there, since Mermaid lays out every node label (the `node["Text"]` syntax used by all Notes templates) inside one; removing it wholesale silently deleted all diagram text rather than blocking anything unsafe. Event handler and `javascript:`/`data:` attributes are still stripped from its contents by the same attribute pass. This is defense in depth, but dependency updates should still be reviewed.
 
 ### Radio Rules security foundation
 
@@ -67,7 +67,7 @@ QSO містить локальні `id/createdAt/updatedAt`, поля конт�
 
 Експорт ADIF 3.1.7 містить версію формату, назву й версію програми. Парсер рахує Unicode-символи за заявленою довжиною, терпить відсутній останній `EOR`, відкидає заголовок до `EOH`, повідомляє про неправильні довжини та зберігає невідомі поля для зворотного експорту. Повторний імпорт не шукає дублікати за змістом.
 
-Markdown HTML екранується й очищається; небезпечні елементи, event-атрибути та `javascript:`/`data:` URL видаляються. Mermaid працює з `securityLevel: strict`, SVG очищається вдруге.
+Markdown HTML екранується й очищається; небезпечні елементи, event-атрибути та `javascript:`/`data:` URL видаляються. Mermaid працює з `securityLevel: strict`, а згенерований SVG проходить окрему, другу очистку, яка видаляє лише script і iframe — `foreignObject` там свідомо лишається, бо саме в ньому Mermaid розміщує підписи вузлів (синтаксис `node["Текст"]` з усіх шаблонів нотаток); повне видалення мовчки стирало весь текст діаграми, а не блокувало щось небезпечне. Event-атрибути та `javascript:`/`data:` усередині нього так само видаляються тим самим проходом.
 
 Radio Rules бачить лише шість дозволених значень QSO й не має файлів, мережі, процесів чи довільних Tauri-команд. Ліміти: 32 КіБ, 4096 токенів, глибина 32, 128 правил, 256 дій, текст дії 1–500 символів.
 
@@ -85,7 +85,7 @@ QSO-Daten enthalten lokale Metadaten, Kontakt- und Stationsfelder sowie `extraFi
 
 Der ADIF-3.1.7-Parser zählt Unicode-Zeichen längengerecht, toleriert ein fehlendes letztes `EOR`, ignoriert Header bis `EOH`, meldet ungültige Längen und bewahrt unbekannte Felder. Wiederholter Import erkennt inhaltliche Duplikate nicht.
 
-Markdown-HTML wird escaped und bereinigt; Mermaid läuft strikt und SVG wird erneut sanitisiert. Radio Rules besitzt ausschließlich freigegebene QSO-Felder/Aktionen und feste Ressourcenlimits.
+Markdown-HTML wird escaped und bereinigt; Mermaid läuft strikt, und das generierte SVG durchläuft einen separaten, zweiten Bereinigungsschritt, der nur Script und Iframe entfernt — `foreignObject` bleibt dort absichtlich erhalten, da Mermaid darin jede Knotenbeschriftung platziert (`node["Text"]`-Syntax aller Notizvorlagen); vollständiges Entfernen löschte stillschweigend den gesamten Diagrammtext, statt etwas Unsicheres zu blockieren. Radio Rules besitzt ausschließlich freigegebene QSO-Felder/Aktionen und feste Ressourcenlimits.
 
 QSO Connect verwendet 12 eindeutige Zeichen, SHA-256 für die Raum-ID, PBKDF2-SHA-256 mit 210.000 Iterationen und AES-256-GCM mit zufälligem 12-Byte-IV. Es ist eine getestete Grundlage, noch ohne Identitätsprüfung, Forward Secrecy, Metadatenverbergung oder Produktionsdienst.
 

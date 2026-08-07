@@ -32,7 +32,7 @@ ADIF import accepts `.adi`, `.adif`, and `.txt`. Export uses a native save dialo
 
 Notes are one autosaved Markdown document with an edit/preview loop. Rendering is delayed by 220 ms after typing. Markdown HTML and generated Mermaid SVG are sanitized before display; raw HTML is escaped.
 
-Beginner templates are localized and inserted at the cursor:
+Beginner templates are localized and always inserted at the very top of the document, newest first — the same reverse-chronological order as the Logbook and FT8 tabs:
 
 1. Basic field note.
 2. QSO report table.
@@ -109,7 +109,7 @@ QSO впорядковано від нових до старих. Пошук п�
 
 Це один автозбережуваний Markdown-документ із живим попереднім переглядом через 220 мс після введення. HTML і Mermaid SVG очищаються перед показом, а сирий HTML екранується.
 
-Доступні локалізовані навчальні шаблони: базова нотатка, звіт QSO, QRPp-експеримент, сходинки потужності, таблиця контактів, порівняння антен і Mermaid-схема станції. Нині відображається перший блок `mermaid`; додавання другого шаблону схеми блокується.
+Доступні локалізовані навчальні шаблони: базова нотатка, звіт QSO, QRPp-експеримент, сходинки потужності, таблиця контактів, порівняння антен і Mermaid-схема станції. Кожен новий шаблон завжди вставляється на самий верх документа, найновіший — згори, як і в Журналі та на вкладці FT8. Нині відображається перший блок `mermaid`; додавання другого шаблону схеми блокується.
 
 ### Декодування FT8 — доступно
 
@@ -163,7 +163,7 @@ Kontakte sind absteigend nach Datum/Zeit sortiert. Die Suche umfasst Rufzeichen,
 
 ### Feldnotizen — verfügbar
 
-Ein automatisch gespeichertes Markdown-Dokument besitzt eine Live-Vorschau. Vorlagen erklären Grundnotizen, QSO-Bericht, QRPp-Experiment, Leistungsleiter, Kontakt- und Antennentabellen sowie einen Mermaid-Signalweg. HTML und SVG werden bereinigt. Derzeit wird der erste Mermaid-Block dargestellt.
+Ein automatisch gespeichertes Markdown-Dokument besitzt eine Live-Vorschau. Vorlagen erklären Grundnotizen, QSO-Bericht, QRPp-Experiment, Leistungsleiter, Kontakt- und Antennentabellen sowie einen Mermaid-Signalweg. Jede neu eingefügte Vorlage landet immer ganz oben im Dokument, neueste zuerst, wie im Logbuch und im FT8-Tab. HTML und SVG werden bereinigt. Derzeit wird der erste Mermaid-Block dargestellt.
 
 ### FT8-Dekodierung — verfügbar
 
