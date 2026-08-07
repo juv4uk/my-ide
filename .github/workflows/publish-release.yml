@@ -77,7 +77,13 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and publish desktop
-        uses: tauri-apps/tauri-action@v0
+        # Pinned to an explicit version instead of the floating "v0" tag: the
+        # r0.6.0 desktop builds failed with "Resource not accessible by
+        # integration" while creating the GitHub Release, and "v0" no longer
+        # resolves to the same commit it did for the r0.5.5 release two days
+        # earlier — an unpinned action tag moving underneath us is the most
+        # likely cause. v0.6.2 is the last known-good 0.x release.
+        uses: tauri-apps/tauri-action@v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
