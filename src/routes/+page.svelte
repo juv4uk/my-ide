@@ -499,7 +499,7 @@
       <button class:active={activeTab === 'new'} onclick={() => activeTab = 'new'}><span>＋</span>{t('newQso')}</button>
       <button class:active={activeTab === 'log'} onclick={() => activeTab = 'log'}><span>☷</span>{t('logbook')}</button>
       <button class:active={activeTab === 'notes'} onclick={openNotes}><span>◇</span>{t('notes')}</button>
-      <button class:active={activeTab === 'ft8'} onclick={() => activeTab = 'ft8'}><span>◈</span>{t('ft8')}</button>
+      <button class:active={activeTab === 'ft8'} onclick={() => activeTab = 'ft8'}><span>∿</span>{t('ft8')}</button>
       <button class:active={activeTab === 'settings'} onclick={() => activeTab = 'settings'}><span>⚙</span>{t('settings')}</button>
     </nav>
     {#if toast}<div class="toast" role="status">{toast}</div>{/if}
