@@ -24,10 +24,10 @@ if ($LASTEXITCODE -ne 0 -or $currentBranch -ne 'main') {
     throw "Release must be created from main; current branch: $currentBranch"
 }
 
-git rev-parse --verify --quiet "refs/tags/v$Version" | Out-Null
-if ($LASTEXITCODE -eq 0) { throw "Tag v$Version already exists." }
+git rev-parse --verify --quiet "refs/tags/r$Version" | Out-Null
+if ($LASTEXITCODE -eq 0) { throw "Tag r$Version already exists." }
 
-Write-Host "Preparing Signal & Radio IDE v$Version" -ForegroundColor Cyan
+Write-Host "Preparing Signal & Radio IDE r$Version" -ForegroundColor Cyan
 
 # EN: npm keeps package.json and the root package-lock.json versions consistent.
 # UK: npm uzghodzhuie versii u package.json ta koreni package-lock.json.
@@ -77,8 +77,14 @@ $unexpectedFiles = @($changedFiles | Where-Object { $_ -notin $releaseFiles })
 if ($unexpectedFiles.Count -gt 0) { throw "Unexpected changed files: $($unexpectedFiles -join ', ')" }
 
 # UTF-8 text is Base64 encoded so Windows PowerShell 5.1 can parse this BOM-less script safely.
-$commitTemplate = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('cmVsZWFzZTogdnswfSB8INCS0LjQv9GD0YHQuiB2ezB9IHwgVmVyw7ZmZmVudGxpY2h1bmcgdnswfQ=='))
-$tagTemplate = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('U2lnbmFsICYgUmFkaW8gSURFIHZ7MH0gfCDQktC40L/Rg9GB0LogfCBWZXLDtmZmZW50bGljaHVuZw=='))
+# EN: Tags use the "r" prefix (not "v") to stay unambiguous next to the
+# maintainer's other fork of this project, which uses "v".
+# UK: Теги мають префікс "r" (не "v"), щоб не плутати з іншим форком
+# цього проєкту, який використовує "v".
+# DE: Tags verwenden das Prafix "r" (nicht "v"), um sie eindeutig vom
+# anderen Fork dieses Projekts mit "v" zu unterscheiden.
+$commitTemplate = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('cmVsZWFzZTogcnswfSB8INCS0LjQv9GD0YHQuiByezB9IHwgVmVyw7ZmZmVudGxpY2h1bmcgcnswfQ=='))
+$tagTemplate = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('U2lnbmFsICYgUmFkaW8gSURFIHJ7MH0gfCDQktC40L/Rg9GB0LogfCBWZXLDtmZmZW50bGljaHVuZw=='))
 $commitMessage = $commitTemplate -f $Version
 $tagMessage = $tagTemplate -f $Version
 
@@ -86,11 +92,11 @@ git add -- $releaseFiles
 if ($LASTEXITCODE -ne 0) { throw 'git add failed.' }
 git commit -m $commitMessage
 if ($LASTEXITCODE -ne 0) { throw 'git commit failed.' }
-git tag -a "v$Version" -m $tagMessage
+git tag -a "r$Version" -m $tagMessage
 if ($LASTEXITCODE -ne 0) { throw 'git tag failed.' }
 
 # EN/UK/DE: Atomic push prevents a branch-only or tag-only partial release.
-git push --atomic origin main "v$Version"
+git push --atomic origin main "r$Version"
 if ($LASTEXITCODE -ne 0) { throw 'Atomic push failed; commit and tag remain local for inspection.' }
 
-Write-Host "Release v$Version pushed successfully." -ForegroundColor Green
+Write-Host "Release r$Version pushed successfully." -ForegroundColor Green

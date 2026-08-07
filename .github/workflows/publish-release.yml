@@ -3,7 +3,9 @@ name: Publish Release
 on:
   push:
     tags:
-      - 'v*'
+      # "r" prefix (not "v") keeps this fork's releases unambiguous next to
+      # the maintainer's other fork of this project, which tags with "v".
+      - 'r*'
   workflow_dispatch:
 
 permissions:
@@ -181,7 +183,7 @@ jobs:
 
       - name: Build Flatpak
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${GITHUB_REF_NAME#r}"
           DEB_FILE=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
           cp "$DEB_FILE" ./my-ide.deb
           mkdir -p flatpak-build
@@ -221,7 +223,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${GITHUB_REF_NAME#r}"
           FLATPAK_PATH="my-ide_${VERSION}_x86_64.flatpak"
           test -f "$FLATPAK_PATH"
           gh release upload "${{ github.ref_name }}" "$FLATPAK_PATH" --clobber
@@ -255,7 +257,7 @@ jobs:
 
       - name: Create standalone Web HTML
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${GITHUB_REF_NAME#r}"
           if [ -d "build" ]; then
             BUILD_DIR="build"
           elif [ -d "dist" ]; then
@@ -395,7 +397,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${GITHUB_REF_NAME#r}"
           APK_PATH="$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
           AAB_PATH="$(find src-tauri/gen/android/app/build/outputs/bundle -type f -name '*.aab' | head -n 1)"
           if [ -z "$APK_PATH" ] || [ -z "$AAB_PATH" ]; then
@@ -460,7 +462,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${GITHUB_REF_NAME#r}"
           APP_PATH="$(find src-tauri/gen/apple -name '*.app' -type d | head -n 1)"
           if [ -z "$APP_PATH" ]; then
             echo "No .app bundle found" >&2

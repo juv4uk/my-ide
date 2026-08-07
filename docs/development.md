@@ -54,7 +54,7 @@ Run from a clean `main` branch:
 
 The script validates semantic version form and tag uniqueness, updates `package.json`, lockfiles, Cargo metadata, and `tauri.conf.json`, then runs Cargo check, Node tests, Svelte check, and frontend build. It permits changes only in five version files, creates a trilingual commit, creates an annotated tag, and atomically pushes branch and tag.
 
-Before running it, add `.github/release-notes/vX.Y.Z.md`. The release workflow prepends that trilingual document and asks GitHub to append the full changelog. Every functional/docs change should be committed separately before the version commit.
+Before running it, add `.github/release-notes/rX.Y.Z.md`. The release workflow prepends that trilingual document and asks GitHub to append the full changelog. Every functional/docs change should be committed separately before the version commit.
 
 ### CI dependency graph
 
@@ -77,7 +77,7 @@ CI створює MSI/EXE, DEB/RPM/AppImage, Flatpak, universal DMG, підпи�
 
 Після оновлення залежності `ft8js` перегенеруйте вбудований WASM: `node scripts/generate-ft8-wasm-assets.mjs`, і закомітьте оновлений `src/lib/ft8/wasm-assets.ts` разом зі зміною залежності.
 
-Реліз запускається з чистої `main` командою `.\scripts\release.ps1 X.Y.Z`. Скрипт оновлює п’ять версійних файлів, виконує Rust/frontend перевірки, створює тримовний коміт, анотований тег і атомарно відправляє їх. Перед цим треба додати `.github/release-notes/vX.Y.Z.md` та окремо закомітити всі звичайні зміни.
+Реліз запускається з чистої `main` командою `.\scripts\release.ps1 X.Y.Z`. Скрипт оновлює п’ять версійних файлів, виконує Rust/frontend перевірки, створює тримовний коміт, анотований тег і атомарно відправляє їх. Перед цим треба додати `.github/release-notes/rX.Y.Z.md` та окремо закомітити всі звичайні зміни.
 
 Правила внесків: не втрачати невідомі ADIF-поля, берегти офлайн-роботу, перекладати UI трьома мовами, тестувати палець/орієнтації, відрізняти основу від готової функції й не комітити секрети, пакети чи build-каталоги.
 
@@ -89,7 +89,7 @@ CI erzeugt MSI/EXE, DEB/RPM/AppImage, Flatpak, universelles DMG, signierte Andro
 
 Nach einem Update der `ft8js`-Abhängigkeit die eingebettete WASM-Nutzlast neu erzeugen: `node scripts/generate-ft8-wasm-assets.mjs`, und das aktualisierte `src/lib/ft8/wasm-assets.ts` zusammen mit dem Dependency-Bump committen.
 
-Ein Release startet auf sauberem `main` mit `.\scripts\release.ps1 X.Y.Z`. Das Skript aktualisiert fünf Versionsdateien, führt Rust-/Frontend-Prüfungen aus, erstellt dreisprachigen Commit und annotierten Tag und pusht beides atomar. Zuvor gehören kuratierte Hinweise nach `.github/release-notes/vX.Y.Z.md`.
+Ein Release startet auf sauberem `main` mit `.\scripts\release.ps1 X.Y.Z`. Das Skript aktualisiert fünf Versionsdateien, führt Rust-/Frontend-Prüfungen aus, erstellt dreisprachigen Commit und annotierten Tag und pusht beides atomar. Zuvor gehören kuratierte Hinweise nach `.github/release-notes/rX.Y.Z.md`.
 
 Beiträge müssen unbekannte ADIF-Felder und Offline-Nutzung bewahren, UI-Texte dreisprachig halten, Touch/Hoch-/Querformat testen, Grundlagen nicht als fertige UI bezeichnen und niemals Geheimnisse oder Build-Artefakte committen.
 
