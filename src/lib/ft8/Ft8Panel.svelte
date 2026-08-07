@@ -203,10 +203,11 @@
 
 <style>
   .ft8-panel { display: flex; flex-direction: column; gap: 14px; }
-  .ft8-controls { display: flex; align-items: center; gap: 12px; }
+  .ft8-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
   .ft8-toggle {
     padding: 10px 18px; border-radius: 12px; border: 1px solid #47556966;
     background: var(--cyan); color: #0b1220; font-weight: 800; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
   }
   .ft8-toggle--active { background: #ff948c; }
   .ft8-hint { color: #64748b; font-size: 12px; }
