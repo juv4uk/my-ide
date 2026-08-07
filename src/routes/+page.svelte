@@ -276,22 +276,24 @@
     ];
   }
 
+  // EN: Templates always land at the very top of the document, newest first,
+  // instead of wherever the cursor happens to be — so a run of inserted
+  // examples reads top-to-bottom as newest-to-oldest, like the Logbook.
+  // UK: Шаблони завжди потрапляють на самий верх документа, найновіші
+  // згори, а не туди, де стоїть курсор — щоб послідовність вставлених
+  // прикладів читалась зверху вниз від нових до старих, як у Журналі.
+  // DE: Vorlagen landen immer ganz oben im Dokument, neueste zuerst,
+  // statt an der Cursorposition.
   async function insertNoteTemplate(template: NoteTemplate): Promise<void> {
-    const start = noteEditor?.selectionStart ?? fieldNotes.length;
-    const end = noteEditor?.selectionEnd ?? start;
-    const before = fieldNotes.slice(0, start);
-    const after = fieldNotes.slice(end);
-    const prefix = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
-    const suffix = after && !after.startsWith('\n') ? '\n\n' : '';
-    const inserted = `${prefix}${template.content}${suffix}`;
-    fieldNotes = `${before}${inserted}${after}`;
+    const suffix = fieldNotes && !fieldNotes.startsWith('\n') ? '\n\n' : '';
+    const inserted = `${template.content}${suffix}`;
+    fieldNotes = `${inserted}${fieldNotes}`;
     scheduleNoteRender();
 
     // Restore the caret after Svelte updates the textarea so learning remains a fluid edit-preview loop.
     await tick();
-    const caret = start + inserted.length;
     noteEditor.focus();
-    noteEditor.setSelectionRange(caret, caret);
+    noteEditor.setSelectionRange(0, 0);
     flash(t('templateAdded'));
   }
 
