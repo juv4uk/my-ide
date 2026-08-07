@@ -75,6 +75,7 @@ The project has a special place for **QRPp** experiments at 500, 100, or even 50
 - import and export ADIF 3.1.7 without losing unknown fields;
 - keep Markdown notes with live preview;
 - learn tables and Mermaid diagrams through ready-made templates;
+- decode FT8 straight from the microphone — a WebAssembly decoder runs entirely on-device, no WSJT-X and no network required;
 - build on the safe, local [Radio Rules](docs/radio-rules.md) foundation for QSO tags and notes;
 - switch between English, Ukrainian, and German with one tap.
 
@@ -133,6 +134,7 @@ If you are an experienced developer, radio amateur, teacher, or maintainer and t
 - імпортувати й експортувати ADIF 3.1.7 без втрати невідомих полів;
 - вести Markdown-нотатки з живим переглядом;
 - вивчати таблиці й Mermaid за готовими шаблонами;
+- декодувати FT8 просто з мікрофона — WebAssembly-декодер працює повністю на пристрої, без WSJT-X і без мережі;
 - використовувати основу безпечних локальних [Radio Rules](docs/radio-rules.md) для тегів і нотаток QSO;
 - одним торканням перемикати англійську, українську та німецьку.
 
@@ -177,6 +179,7 @@ Einen besonderen Platz haben **QRPp**-Experimente mit 500, 100 oder sogar 50 mW.
 - ADIF 3.1.7 importieren und exportieren, ohne unbekannte Felder zu verlieren;
 - Markdown-Notizen mit Live-Vorschau schreiben;
 - Tabellen und Mermaid-Diagramme mit fertigen Vorlagen kennenlernen;
+- FT8 direkt über das Mikrofon dekodieren — ein WebAssembly-Decoder läuft vollständig auf dem Gerät, ganz ohne WSJT-X und ohne Netzwerk;
 - die sichere lokale [Radio-Rules](docs/radio-rules.md)-Grundlage für QSO-Tags und Notizen nutzen;
 - mit einmaligem Antippen zwischen Englisch, Ukrainisch und Deutsch wechseln.
 
